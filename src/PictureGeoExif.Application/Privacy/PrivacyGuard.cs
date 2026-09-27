@@ -22,7 +22,9 @@ public static class PrivacyGuard
         if (string.IsNullOrEmpty(payload)) return;
         foreach (var path in context.LocalPaths.Where(p => !string.IsNullOrWhiteSpace(p)))
         {
-            string? folder = Path.GetDirectoryName(path);
+            // Separator-agnostic: a macOS path must be recognised on Windows too (and vice versa).
+            int cut = path.LastIndexOfAny(['/', '\\']);
+            string? folder = cut > 0 ? path[..cut] : null;
             if (payload.Contains(path, StringComparison.OrdinalIgnoreCase) ||
                 (!string.IsNullOrEmpty(folder) && folder.Length > 3 && payload.Contains(folder, StringComparison.OrdinalIgnoreCase)))
                 throw new PrivacyViolationException("Anfrage enthält einen lokalen Dateipfad und wurde nicht gesendet.");

@@ -27,11 +27,17 @@ public sealed class MacPlatformInfo : IPlatformInfo
         }
     }
 
+    /// <summary>Pure string logic (no file system access), so it behaves the same on every OS and in tests.</summary>
     public static string? FindBundle(string baseDirectory)
     {
-        var macOs = new DirectoryInfo(baseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-        if (macOs.Name != "MacOS" || macOs.Parent is not { Name: "Contents" } contents || contents.Parent is not { } bundle) return null;
-        return bundle.Name.EndsWith(".app", StringComparison.OrdinalIgnoreCase) ? bundle.FullName : null;
+        string path = baseDirectory.TrimEnd('/', '\\');
+        foreach (var suffix in new[] { "/Contents/MacOS", "\\Contents\\MacOS" })
+        {
+            if (!path.EndsWith(suffix, StringComparison.Ordinal)) continue;
+            string bundle = path[..^suffix.Length];
+            return bundle.EndsWith(".app", StringComparison.OrdinalIgnoreCase) ? bundle : null;
+        }
+        return null;
     }
 
     [SupportedOSPlatform("macos")]

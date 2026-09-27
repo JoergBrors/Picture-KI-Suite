@@ -75,7 +75,7 @@ Ergebnisse in dieser Umgebung:
 | Prüfung | Ergebnis |
 | --- | --- |
 | `dotnet build PictureGeoExif.sln -c Release` (inkl. WPF dank `EnableWindowsTargeting`) | PASS, 0 Warnungen |
-| `dotnet test PictureGeoExif.CrossPlatform.slnf` | PASS – 195 Tests (Core 63, Metadata 51, Application 33, Platform 41, Avalonia headless 7) |
+| `dotnet test PictureGeoExif.CrossPlatform.slnf` | PASS – 198 Tests (Core 64, Metadata 51, Application 34, Platform 42, Avalonia headless 7) |
 | Bisherige Tests (Metadaten, Logik, Trassen, Map-Matching) | PASS (übernommen; WPF-Fenstertests nur unter Windows) |
 | `scripts/build-macos-arm64.sh` (Cross-Build unter Linux) | PASS: Bundle, Info.plist, Resources, ZIP; apphost `Mach-O 64-bit arm64` mit Ad-hoc-Signatur (LC_CODE_SIGNATURE) vom SDK; `libAvaloniaNative`, `libSkiaSharp`, `libHarfBuzzSharp` im Bundle |
 | `PictureGeoExif --self-test` (Linux) | PASS |

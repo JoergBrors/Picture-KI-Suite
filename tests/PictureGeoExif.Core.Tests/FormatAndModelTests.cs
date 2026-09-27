@@ -98,6 +98,7 @@ public sealed class AtomicFileTests : IDisposable
     [InlineData("IMG_0001.HEIC", "IMG_0001.HEIC")]
     [InlineData("../../etc/passwd", "passwd")]
     [InlineData("a:b*c?.jpg", "a_b_c_.jpg")]
+    [InlineData(@"C:\Fotos\IMG_2.jpg", "IMG_2.jpg")]
     [InlineData("   ", "bild")]
     [InlineData(null, "bild")]
     public void SafeFileName_StripsPathsAndInvalidCharacters(string? input, string expected) =>

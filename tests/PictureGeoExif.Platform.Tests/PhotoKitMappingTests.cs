@@ -106,6 +106,7 @@ public class PhotoKitMappingTests
     [InlineData("/Applications/PictureGeoExif.app/Contents/MacOS/", "/Applications/PictureGeoExif.app")]
     [InlineData("/Users/x/dev/bin/Release/net10.0/osx-arm64/publish/", null)]
     [InlineData("/tmp/Contents/MacOS/", null)]
+    [InlineData(@"C:\Build\PictureGeoExif.app\Contents\MacOS\", @"C:\Build\PictureGeoExif.app")]
     public void AppBundle_IsDetectedFromExecutableFolder(string baseDirectory, string? expected) =>
         Assert.Equal(expected, MacPlatformInfo.FindBundle(baseDirectory));
 }

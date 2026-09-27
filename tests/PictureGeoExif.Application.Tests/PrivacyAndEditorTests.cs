@@ -19,6 +19,11 @@ public class PrivacyGuardTests
     public void ForbiddenData_IsRejected(string payload) =>
         Assert.Throws<PrivacyViolationException>(() => PrivacyGuard.EnsureSafe(payload, Context));
 
+    [Fact]
+    public void WindowsFolder_IsRejected() =>
+        Assert.Throws<PrivacyViolationException>(() => PrivacyGuard.EnsureSafe(@"Ordner C:\Users\anna\Bilder",
+            new PrivacyContext([@"C:\Users\anna\Bilder\a.jpg"], [], [])));
+
     [Theory]
     [InlineData("Metadaten: {\"captureDate\":\"2024-01-15\",\"hemisphere\":\"Nordhalbkugel\"}")]
     [InlineData("datei IMG_1.jpg, Stichwörter: Schnee")]

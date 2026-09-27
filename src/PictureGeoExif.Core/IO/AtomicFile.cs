@@ -76,7 +76,10 @@ public static class AtomicFile
     {
         if (string.IsNullOrWhiteSpace(name)) return fallback;
         var invalid = Path.GetInvalidFileNameChars().Concat(['/', '\\', ':', '*', '?', '"', '<', '>', '|']).ToHashSet();
-        var cleaned = new string(Path.GetFileName(name.Trim()).Select(c => invalid.Contains(c) || char.IsControl(c) ? '_' : c).ToArray()).Trim('.', ' ');
+        // Last segment after '/' or '\' on every OS; Path.GetFileName would also treat "a:" as a drive on Windows.
+        string trimmed = name.Trim();
+        string last = trimmed[(trimmed.LastIndexOfAny(['/', '\\']) + 1)..];
+        var cleaned = new string(last.Select(c => invalid.Contains(c) || char.IsControl(c) ? '_' : c).ToArray()).Trim('.', ' ');
         return cleaned.Length == 0 ? fallback : cleaned;
     }
 }
