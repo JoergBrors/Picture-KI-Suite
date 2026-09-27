@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>net.brors.picturegeoexif</string>
+    <key>CFBundleName</key>
+    <string>PictureGeoExif</string>
+    <key>CFBundleDisplayName</key>
+    <string>PictureGeoExif</string>
+    <key>CFBundleExecutable</key>
+    <string>PictureGeoExif</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>__VERSION__</string>
+    <key>CFBundleVersion</key>
+    <string>__BUILD__</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>de</string>
+    <key>CFBundleIconFile</key>
+    <string>PictureGeoExif</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.photography</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>LSArchitecturePriority</key>
+    <array>
+        <string>arm64</string>
+    </array>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright © 2026 Jörg Brors. MIT-Lizenz.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>PictureGeoExif liest Fotos aus Ihrer Fotomediathek, um Aufnahmedaten, GPS-Position und weitere Metadaten (EXIF, XMP, IPTC) anzuzeigen und Originale auf Wunsch als Datei zu exportieren. Ihre Fotos in Apple Fotos werden dabei nicht verändert und ohne Ihre ausdrückliche Zustimmung nicht an Dritte übertragen.</string>
+</dict>
+</plist>

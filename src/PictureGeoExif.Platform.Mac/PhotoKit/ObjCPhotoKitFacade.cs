@@ -31,6 +31,18 @@ public sealed class ObjCPhotoKitFacade : IPhotoKitFacade
 
     public bool IsAvailable => available;
 
+    public bool HasUsageDescription
+    {
+        get
+        {
+            if (!available) return false;
+            using var pool = AutoreleasePool.Create();
+            IntPtr bundle = ObjC.Send(ObjC.Class("NSBundle"), "mainBundle");
+            IntPtr value = bundle == IntPtr.Zero ? IntPtr.Zero : ObjC.Send(bundle, "objectForInfoDictionaryKey:", ObjC.NSString("NSPhotoLibraryUsageDescription"));
+            return !string.IsNullOrWhiteSpace(ObjC.FromNSString(value));
+        }
+    }
+
     private void EnsureAvailable()
     {
         if (!available) throw new PlatformNotSupportedException("Photos.framework ist nicht verfügbar.");

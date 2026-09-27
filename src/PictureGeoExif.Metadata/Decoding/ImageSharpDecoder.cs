@@ -8,7 +8,7 @@ namespace PictureGeoExif.Metadata.Decoding;
 /// <summary>Cross-platform decoder for JPEG, PNG, TIFF, BMP, GIF and WebP (ImageSharp). No HEIC/RAW support.</summary>
 public sealed class ImageSharpDecoder : IImageDecoder
 {
-    public string Name => "ImageSharp " + typeof(Image).Assembly.GetName().Version?.ToString(3);
+    public string Name => "ImageSharp " + PictureGeoExif.Core.AppInfo.LibraryVersion(typeof(Image));
 
     public IReadOnlyCollection<ImageFormat> SupportedFormats { get; } =
         [ImageFormat.Jpeg, ImageFormat.Png, ImageFormat.Tiff, ImageFormat.Bmp, ImageFormat.Gif, ImageFormat.WebP];

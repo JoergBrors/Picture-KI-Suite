@@ -58,6 +58,12 @@ public sealed partial class PhotosBrowserViewModel(IPhotoLibraryService photos, 
     [RelayCommand(CanExecute = nameof(CanRequestAccess))]
     private async Task RequestAccessAsync()
     {
+        if (!photos.CanRequestAuthorization)
+        {
+            Message = "Der Zugriff kann nur angefordert werden, wenn PictureGeoExif als App gestartet wird (open PictureGeoExif.app), " +
+                      "nicht aus dem Terminal oder per „dotnet run“. Dateien können weiterhin geöffnet werden.";
+            return;
+        }
         Status = await photos.RequestAuthorizationAsync();
         logger.LogInformation("Photo Library Authorization Status: {Status}", Status);
         if (Status.CanRead()) await OpenLibraryAsync();

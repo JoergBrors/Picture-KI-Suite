@@ -9,6 +9,12 @@ public interface IPhotoLibraryService
     /// <summary>True if the platform offers a photo library integration at all.</summary>
     bool IsAvailable { get; }
 
+    /// <summary>
+    /// False if the permission prompt cannot be shown safely, e.g. on macOS when the process does not run from the .app
+    /// bundle (no NSPhotoLibraryUsageDescription – macOS would terminate the process on a request).
+    /// </summary>
+    bool CanRequestAuthorization { get; }
+
     Task<PhotoLibraryAccessStatus> GetAuthorizationStatusAsync();
 
     /// <summary>Shows the system permission prompt if the status is NotDetermined; otherwise returns the current status. Only call on a user action.</summary>
@@ -42,6 +48,7 @@ public interface IPhotoLibraryService
 public sealed class UnavailablePhotoLibraryService : IPhotoLibraryService
 {
     public bool IsAvailable => false;
+    public bool CanRequestAuthorization => false;
     public Task<PhotoLibraryAccessStatus> GetAuthorizationStatusAsync() => Task.FromResult(PhotoLibraryAccessStatus.Unavailable);
     public Task<PhotoLibraryAccessStatus> RequestAuthorizationAsync() => Task.FromResult(PhotoLibraryAccessStatus.Unavailable);
     public Task<IReadOnlyList<PhotoAlbum>> GetAlbumsAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PhotoAlbum>>([]);

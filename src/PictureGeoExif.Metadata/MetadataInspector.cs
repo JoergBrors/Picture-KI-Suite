@@ -177,10 +177,10 @@ public static class MetadataInspector
     /// <summary>Capabilities of the metadata core for the diagnostics window.</summary>
     public static IReadOnlyList<(string Capability, string Formats)> Capabilities { get; } =
     [
-        ("EXIF lesen", "JPEG, PNG, TIFF, WebP, HEIC/HEIF, AVIF, DNG, CR2/CR3, NEF, ARW, ORF, RW2 u. a. (MetadataExtractor " + typeof(ImageMetadataReader).Assembly.GetName().Version?.ToString(3) + ")"),
+        ("EXIF lesen", "JPEG, PNG, TIFF, WebP, HEIC/HEIF, AVIF, DNG, CR2/CR3, NEF, ARW, ORF, RW2 u. a. (MetadataExtractor " + PictureGeoExif.Core.AppInfo.LibraryVersion(typeof(ImageMetadataReader)) + ")"),
         ("GPS schreiben", "JPEG (verlustfrei, nur EXIF-Segment), PNG, TIFF"),
         ("XMP lesen", "eingebettet (alle von MetadataExtractor unterstützten Formate) und Sidecar <Bild>.xmp"),
-        ("XMP schreiben", "Sidecar <Bild>.xmp (XmpCore " + typeof(XmpMetaFactory).Assembly.GetName().Version?.ToString(3) + ")"),
+        ("XMP schreiben", "Sidecar <Bild>.xmp (XmpCore " + PictureGeoExif.Core.AppInfo.LibraryVersion(typeof(XmpMetaFactory)) + ")"),
         ("IPTC lesen", "JPEG (APP13), TIFF"),
     ];
 }

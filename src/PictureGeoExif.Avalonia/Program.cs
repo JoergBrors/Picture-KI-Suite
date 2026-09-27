@@ -17,6 +17,7 @@ internal static class Program
         try
         {
             Bootstrap.LogStartup(services).GetAwaiter().GetResult();
+            if (args.Contains("--self-test")) return SelfTest.RunAsync(services).GetAwaiter().GetResult();
             return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         }
         catch (Exception ex)

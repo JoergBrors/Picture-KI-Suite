@@ -10,6 +10,9 @@ public interface IPhotoKitFacade
     /// <summary>Photos.framework could be loaded.</summary>
     bool IsAvailable { get; }
 
+    /// <summary>The main bundle declares NSPhotoLibraryUsageDescription (required before any permission request).</summary>
+    bool HasUsageDescription { get; }
+
     /// <summary>PHAuthorizationStatus for PHAccessLevelReadWrite.</summary>
     long AuthorizationStatus();
 

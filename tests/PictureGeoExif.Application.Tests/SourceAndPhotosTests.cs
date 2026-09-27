@@ -13,6 +13,7 @@ internal sealed class FakePhotoLibrary : IPhotoLibraryService
     public Dictionary<string, (PhotoAsset Asset, byte[] Original)> Assets { get; } = [];
     public int Exports { get; private set; }
     public bool IsAvailable => true;
+    public bool CanRequestAuthorization => true;
     public Task<PhotoLibraryAccessStatus> GetAuthorizationStatusAsync() => Task.FromResult(PhotoLibraryAccessStatus.Authorized);
     public Task<PhotoLibraryAccessStatus> RequestAuthorizationAsync() => GetAuthorizationStatusAsync();
     public Task<IReadOnlyList<PhotoAlbum>> GetAlbumsAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PhotoAlbum>>([]);

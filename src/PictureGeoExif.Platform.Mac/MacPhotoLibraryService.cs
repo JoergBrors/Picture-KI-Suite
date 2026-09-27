@@ -17,6 +17,15 @@ public sealed class MacPhotoLibraryService(IPhotoKitFacade facade, ILogger<MacPh
 
     public bool IsAvailable => facade.IsAvailable;
 
+    public bool CanRequestAuthorization
+    {
+        get
+        {
+            try { return facade.IsAvailable && facade.HasUsageDescription; }
+            catch (Exception ex) when (ex is not OutOfMemoryException) { logger?.LogWarning(ex, "Info.plist nicht lesbar."); return false; }
+        }
+    }
+
     public Task<PhotoLibraryAccessStatus> GetAuthorizationStatusAsync()
     {
         if (!facade.IsAvailable) return Task.FromResult(PhotoLibraryAccessStatus.Unavailable);
@@ -32,6 +41,12 @@ public sealed class MacPhotoLibraryService(IPhotoKitFacade facade, ILogger<MacPh
     {
         var current = await GetAuthorizationStatusAsync();
         if (current != PhotoLibraryAccessStatus.NotDetermined) return current;
+        if (!CanRequestAuthorization)
+        {
+            // Without NSPhotoLibraryUsageDescription in the main bundle macOS kills the process on a request.
+            logger?.LogWarning("Fotos-Zugriff nicht angefragt: Prozess läuft nicht aus PictureGeoExif.app (NSPhotoLibraryUsageDescription fehlt).");
+            return current;
+        }
         try
         {
             var status = PhotoKitMapping.MapAuthorizationStatus(await facade.RequestAuthorizationAsync());

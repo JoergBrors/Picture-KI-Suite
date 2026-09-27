@@ -1,6 +1,6 @@
 # Drittanbieter-Lizenzen und Einsatz im Unternehmen
 
-Stand: 27.09.2026 · PictureGeoExif (PictureExifclone) 0.97 · Zielplattform .NET 10 / Windows 10 1809+
+Stand: 27.09.2026 · PictureGeoExif 0.98 · Zielplattformen .NET 10: Windows 10 1809+ (WPF und Avalonia), macOS auf Apple Silicon (Avalonia)
 
 Diese Datei listet alle Komponenten Dritter, die mit der Anwendung ausgeliefert oder zur Laufzeit genutzt werden, einschließlich transitiver Abhängigkeiten. Die vollständigen Lizenztexte liegen im Ordner `licenses/`. Die maschinenlesbare Liste steht in `licenses/dependency-licenses-summary.json`. Beide werden mit `scripts/Update-ThirdPartyLicenses.ps1` direkt aus den NuGet-Paketen erzeugt, nicht aus Webseiten.
 
@@ -53,7 +53,26 @@ Alle folgenden Pakete stehen unter MIT, Copyright Microsoft Corporation:
 
 Lizenztexte und `THIRD-PARTY-NOTICES.TXT` stehen jeweils unter `licenses/<Paketname>/`.
 
-### 2.3 .NET-Laufzeit (nur im Self-Contained-Release enthalten)
+### 2.3 Avalonia-Oberfläche (macOS Apple Silicon, Windows)
+
+Nur in der Avalonia-Anwendung (`PictureGeoExif.app` bzw. `PictureGeoExif.exe`) enthalten, nicht in der WPF-Anwendung. WebView2, Ookii.Dialogs und Leaflet werden dort nicht verwendet.
+
+| Komponente | Version | Lizenz (SPDX) | Zweck in der App | Lizenzdateien |
+| --- | --- | --- | --- | --- |
+| Avalonia, Avalonia.Desktop, Avalonia.Themes.Fluent, Avalonia.Native, Avalonia.Skia u. a. | 12.1.3 | MIT (Copyright AvaloniaUI OÜ) | Plattformneutrale Oberfläche | `licenses/Avalonia/LICENSE.md` |
+| Avalonia.Controls.DataGrid | 12.1.2 | MIT | Tabellen (Metadaten, KI) | `licenses/Avalonia/LICENSE.md` |
+| Avalonia.Fonts.Inter (enthält die Schrift **Inter**) | 12.1.3 | Paket MIT, Schrift **OFL-1.1** | Oberflächenschrift | `licenses/Inter/LICENSE.txt` |
+| SkiaSharp (+ NativeAssets) | 3.119.4 | MIT (enthält Skia, BSD-3-Clause) | Rendering | `licenses/SkiaSharp/LICENSE.txt` |
+| HarfBuzzSharp (+ NativeAssets) | 8.3.1.3 | MIT (enthält HarfBuzz, „Old MIT“) | Textlayout | `licenses/HarfBuzzSharp/LICENSE.txt` |
+| MicroCom.Runtime, Tmds.DBus.Protocol (nur Linux) | transitiv | MIT | Interop von Avalonia | – |
+| CommunityToolkit.Mvvm | 8.4.2 | MIT | MVVM (ObservableObject, RelayCommand) | `licenses/CommunityToolkit.Mvvm/` |
+| Microsoft.Extensions.DependencyInjection, .Logging, .Logging.Console | 10.0.12 | MIT | Dependency Injection, Logging | wie 2.2 |
+
+**Build-Telemetrie:** Das von Avalonia transitiv eingebundene Paket `Avalonia.BuildServices` sendet beim **Build** (nicht zur Laufzeit) anonyme Telemetrie. Build-Skript und CI setzen `AVALONIA_TELEMETRY_OPTOUT=1`; lokal ebenso setzen.
+
+**Apple-Systemframeworks:** Photos.framework (PhotoKit), ImageIO, CoreGraphics, CoreFoundation, Security (Schlüsselbund) und AppKit sind Bestandteil von macOS. Sie werden **nicht** mitgeliefert, sondern zur Laufzeit vom System geladen; es entstehen keine zusätzlichen Lizenzpflichten. HEIC/HEIF, DNG und RAW werden über ImageIO dekodiert – es wurde bewusst **keine** proprietäre Dekoderbibliothek ergänzt.
+
+### 2.4 .NET-Laufzeit (nur im Self-Contained-Release enthalten)
 
 Das Release-ZIP enthält die .NET-Runtime und WPF, damit auf dem Zielrechner kein .NET installiert sein muss.
 
@@ -62,7 +81,7 @@ Das Release-ZIP enthält die .NET-Runtime und WPF, damit auf dem Zielrechner kei
 | Microsoft.NETCore.App (Runtime win-x64) | 10.0.12 | MIT + Third-Party-Notices | `licenses/Microsoft.NETCore.App.Runtime.win-x64/` |
 | Microsoft.WindowsDesktop.App (WPF, win-x64) | 10.0.12 | MIT | `licenses/Microsoft.WindowsDesktop.App.Runtime.win-x64/` |
 
-Beim ARM64-Release gelten dieselben Lizenzen für die `win-arm64`-Pakete. Die genaue Patchversion hängt vom SDK zum Build-Zeitpunkt ab; das Skript erfasst die tatsächlich verwendete.
+Beim ARM64-Release gelten dieselben Lizenzen für die `win-arm64`-Pakete, im macOS-Bundle für `Microsoft.NETCore.App.Runtime.osx-arm64` (MIT). Die genaue Patchversion hängt vom SDK zum Build-Zeitpunkt ab; das Skript erfasst die tatsächlich verwendete.
 
 ---
 
@@ -116,7 +135,7 @@ Die Bildanalyse ist **standardmäßig nicht aktiv**. Ohne Schlüssel und eingetr
 
 ### 3.6 Schriften, Symbole und Normen
 
-- **Schriften:** Es werden keine Schriftdateien mitgeliefert. Stempel verwenden die Systemschrift „Segoe UI“ (ersatzweise „Arial“) des jeweiligen Windows-Systems. Symbole in der Oberfläche sind Unicode-Emoji der Systemschrift.
+- **Schriften:** Die WPF-Anwendung liefert keine Schriftdateien aus. Die Avalonia-Anwendung enthält die Schrift **Inter** (SIL Open Font License 1.1, `licenses/Inter/LICENSE.txt`) als Oberflächenschrift. Stempel im Bildeditor verwenden eine Systemschrift („Segoe UI“, „Arial“, „Helvetica Neue“, „Helvetica“, „DejaVu Sans“ – die erste vorhandene). Symbole sind Unicode-Emoji der Systemschrift.
 - **Normen:** CIPA DC-008/DC-010 (EXIF 3.1, XMP) und die IPTC Photo Metadata sind nur referenziert, nicht enthalten.
 
 ---
@@ -190,10 +209,12 @@ Betriebsdetails, Installation und Speicherorte stehen in `docs/Betrieb-und-Unter
 | Komponente | Version | Lizenz |
 | --- | --- | --- |
 | xunit | 2.9.3 | Apache-2.0 |
+| xunit.v3 | 3.2.2 | Apache-2.0 |
+| Avalonia.Headless, Avalonia.Headless.XUnit | 12.1.3 | MIT |
 | xunit.runner.visualstudio | 3.1.4 | Apache-2.0 |
 | Microsoft.NET.Test.Sdk | 17.14.1 | MIT |
 | coverlet.collector | 6.0.4 | MIT |
-| .NET SDK 10.0.401 | – | MIT |
+| .NET SDK 10.0.x | – | MIT |
 | GitHub Actions (`actions/checkout`, `actions/setup-dotnet`, `actions/cache`, `ncipollo/release-action`) | v4 bzw. v1 | MIT |
 
 ---

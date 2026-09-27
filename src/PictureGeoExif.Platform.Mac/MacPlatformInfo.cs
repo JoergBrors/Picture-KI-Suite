@@ -48,6 +48,6 @@ public sealed class MacPlatformInfo : IPlatformInfo
         catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException) { return null; }
     }
 
-    [DllImport("libc")]
+    [DllImport("/usr/lib/libSystem.B.dylib")]
     private static extern unsafe int sysctlbyname(string name, void* oldp, nuint* oldlenp, void* newp, nuint newlen);
 }

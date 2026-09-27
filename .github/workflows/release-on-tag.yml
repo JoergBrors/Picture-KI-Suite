@@ -5,21 +5,23 @@ on:
     tags:
       - '*'
 
+env:
+  DOTNET_NOLOGO: 1
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  AVALONIA_TELEMETRY_OPTOUT: 1
+
 jobs:
-  build_and_release:
+  windows:
     runs-on: windows-latest
     permissions:
       contents: write
-
     strategy:
       fail-fast: false
       matrix:
         runtime: [win-x64, win-arm64]
-
     env:
       CONFIGURATION: Release
-      PROJECT_PATH: PictureExifclone.csproj
-
+      PROJECT_PATH: src/PictureGeoExif.Wpf/PictureGeoExif.Wpf.csproj
     steps:
       # Build exactly the tagged commit (not whatever main points to).
       - name: Checkout tag
@@ -27,31 +29,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup .NET (global.json)
+      - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
-          global-json-file: global.json
+          dotnet-version: '10.0.x'
 
       - name: Test
         if: matrix.runtime == 'win-x64'
-        run: dotnet test PictureExifclone.sln -c Release
+        run: dotnet test PictureGeoExif.sln -c Release
 
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props', '**/packages.lock.json', '**/NuGet.config') }}
-          restore-keys: |
-            nuget-${{ runner.os }}-
-
-      - name: Restore (RID)
-        run: dotnet restore "${{ env.PROJECT_PATH }}" -r ${{ matrix.runtime }}
-
-      - name: Build (RID)
-        run: dotnet build "${{ env.PROJECT_PATH }}" -c ${{ env.CONFIGURATION }} -r ${{ matrix.runtime }} --no-restore
-
-      - name: Publish single-file (self-contained)
+      - name: Publish WPF single-file (self-contained)
         shell: pwsh
         run: |
           dotnet publish "${{ env.PROJECT_PATH }}" `
@@ -65,26 +52,11 @@ jobs:
             /p:DebugSymbols=false `
             -o "out"
 
-      - name: Copy license files to output
-        shell: pwsh
-        run: |
-          # Kopiere LICENSE und THIRD-PARTY-LICENSES.md
-          Copy-Item -Path "LICENSE" -Destination "out\LICENSE" -Force
-          Copy-Item -Path "THIRD-PARTY-LICENSES.md" -Destination "out\THIRD-PARTY-LICENSES.md" -Force
-          
-          # Kopiere licenses Ordner rekursiv
-          if (Test-Path "licenses") {
-            Copy-Item -Path "licenses" -Destination "out\licenses" -Recurse -Force
-          }
-          
-          Write-Host "License files copied to output folder"
-
       - name: Create zip
         shell: pwsh
         run: |
-          $tag = "${{ github.ref_name }}"
-          $runtime = "${{ matrix.runtime }}"
-          $zip = "PictureExifclone-$tag-$runtime.zip"
+          # LICENSE, THIRD-PARTY-LICENSES.md and licenses/ are copied by the project into the output folder.
+          $zip = "PictureExifclone-${{ github.ref_name }}-${{ matrix.runtime }}.zip"
           if (Test-Path $zip) { Remove-Item $zip -Force }
           Compress-Archive -Path "out\*" -DestinationPath $zip
           "ZIP_NAME=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
@@ -98,15 +70,44 @@ jobs:
             Automatisch erstelltes Release für Tag `${{ github.ref_name }}`.
 
             **Build-Quelle:** Tag-Commit `${{ github.sha }}`
-            **Runtime:** `${{ matrix.runtime }}`
-            **Single-File:** SelfContained
-            
-            **Enthaltene Lizenzen:**
-            - LICENSE (MIT)
-            - THIRD-PARTY-LICENSES.md
-            - licenses/ Ordner mit allen Drittanbieter-Lizenzen
+
+            - Windows (WPF, self-contained single file): `PictureExifclone-<tag>-win-x64.zip`, `…-win-arm64.zip`
+            - macOS Apple Silicon (Avalonia, unsigniert): `PictureGeoExif-<tag>-macOS-arm64.zip` – siehe docs/MacOS-Deployment.md (Gatekeeper)
+
+            **Enthaltene Lizenzen:** LICENSE (MIT), THIRD-PARTY-LICENSES.md, licenses/
           draft: false
           prerelease: false
           allowUpdates: true
           artifacts: ${{ env.ZIP_NAME }}
           replacesArtifacts: true
+
+  macos:
+    runs-on: macos-15
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build PictureGeoExif.app (unsigned, not notarized)
+        run: |
+          scripts/build-macos-arm64.sh --build-number "${{ github.run_number }}"
+          artifacts/macos-arm64/PictureGeoExif.app/Contents/MacOS/PictureGeoExif --self-test
+          mv artifacts/macos-arm64/PictureGeoExif-macOS-arm64.zip "PictureGeoExif-${{ github.ref_name }}-macOS-arm64.zip"
+
+      - name: Upload to GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          allowUpdates: true
+          omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
+          artifacts: PictureGeoExif-${{ github.ref_name }}-macOS-arm64.zip
+          replacesArtifacts: false

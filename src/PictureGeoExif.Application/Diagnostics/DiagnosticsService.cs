@@ -34,6 +34,7 @@ public sealed class DiagnosticsService(IPlatformInfo platform, IPhotoLibraryServ
             new("Resources Path", platform.ResourcesPath),
             new("PhotoKit available", photos.IsAvailable ? "ja" : "nein"),
             new("PhotoKit authorization", status.ToString()),
+            new("PhotoKit request possible", photos.CanRequestAuthorization ? "ja" : "nein (kein App-Bundle mit NSPhotoLibraryUsageDescription)"),
             new("Image decoder", decoder.Name),
             new("Image decoder capabilities", string.Join(", ", decoder.SupportedFormats.Select(ImageFormatCapabilities.DisplayName))),
         };

@@ -6,6 +6,7 @@ namespace PictureGeoExif.Platform.Tests;
 internal sealed class FakePhotoKitFacade : IPhotoKitFacade
 {
     public bool IsAvailable { get; set; } = true;
+    public bool HasUsageDescription { get; set; } = true;
     public long Status { get; set; } = 3; // authorized
     public long StatusAfterRequest { get; set; } = 3;
     public int RequestCount { get; private set; }

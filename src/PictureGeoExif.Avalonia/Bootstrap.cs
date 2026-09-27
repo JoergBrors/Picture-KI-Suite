@@ -26,7 +26,7 @@ namespace PictureGeoExif.Desktop;
 /// <summary>Dependency injection setup. Platform adapters are chosen here and nowhere else.</summary>
 public static class Bootstrap
 {
-    public static string UiFramework => "Avalonia " + typeof(global::Avalonia.Application).Assembly.GetName().Version?.ToString(3);
+    public static string UiFramework => "Avalonia " + AppInfo.LibraryVersion(typeof(global::Avalonia.Application));
 
     public static ServiceProvider BuildServices(AppPaths? paths = null, bool fileLogging = true)
     {

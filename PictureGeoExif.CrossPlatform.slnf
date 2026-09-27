@@ -1,0 +1,18 @@
+{
+  "solution": {
+    "path": "PictureGeoExif.sln",
+    "projects": [
+      "src/PictureGeoExif.Core/PictureGeoExif.Core.csproj",
+      "src/PictureGeoExif.Metadata/PictureGeoExif.Metadata.csproj",
+      "src/PictureGeoExif.Application/PictureGeoExif.Application.csproj",
+      "src/PictureGeoExif.Platform.Mac/PictureGeoExif.Platform.Mac.csproj",
+      "src/PictureGeoExif.Platform.Windows/PictureGeoExif.Platform.Windows.csproj",
+      "src/PictureGeoExif.Avalonia/PictureGeoExif.Avalonia.csproj",
+      "tests/PictureGeoExif.Core.Tests/PictureGeoExif.Core.Tests.csproj",
+      "tests/PictureGeoExif.Metadata.Tests/PictureGeoExif.Metadata.Tests.csproj",
+      "tests/PictureGeoExif.Application.Tests/PictureGeoExif.Application.Tests.csproj",
+      "tests/PictureGeoExif.Platform.Tests/PictureGeoExif.Platform.Tests.csproj",
+      "tests/PictureGeoExif.Avalonia.Tests/PictureGeoExif.Avalonia.Tests.csproj"
+    ]
+  }
+}

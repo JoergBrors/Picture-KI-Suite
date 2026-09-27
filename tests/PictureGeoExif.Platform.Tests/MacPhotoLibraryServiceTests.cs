@@ -40,6 +40,16 @@ public sealed class MacPhotoLibraryServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Request_WithoutUsageDescription_IsNotSent()
+    {
+        facade.Status = 0;
+        facade.HasUsageDescription = false; // e.g. "dotnet run" outside the .app bundle
+        Assert.False(service.CanRequestAuthorization);
+        Assert.Equal(PhotoLibraryAccessStatus.NotDetermined, await service.RequestAuthorizationAsync());
+        Assert.Equal(0, facade.RequestCount);
+    }
+
+    [Fact]
     public async Task Denied_ListsNothing_AndDoesNotThrow()
     {
         facade.Status = 2;
