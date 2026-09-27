@@ -72,9 +72,9 @@ Regeln:
 | Workflow | Auslöser | Jobs |
 | --- | --- | --- |
 | `.github/workflows/build.yml` | Pull Request, Push auf `main`, manuell | **Windows:** Build (inkl. WPF), Tests, Paketaudit, Publish WPF + Avalonia win-x64, Artifact · **macOS arm64:** `scripts/build-macos-arm64.sh` (Restore, Test, Build, Publish, `.app`, ZIP), Prüfung (`plutil`, `lipo`, `--self-test`), Artifact `PictureGeoExif-macOS-arm64` · **Linux:** Tests |
-| `.github/workflows/release-on-tag.yml` | Tag-Push | WPF single-file `win-x64`/`win-arm64` + macOS-arm64-ZIP als Release-Assets |
+| `.github/workflows/release-on-tag.yml` | Tag-Push oder manuell (Tag als Eingabe) | WPF single-file `win-x64`/`win-arm64` + macOS-arm64-ZIP als Release-Assets |
 
-Release: Version in `Directory.Build.props` anheben, dann `git tag v0.98 && git push origin v0.98`.
+Release: Version in `Directory.Build.props` anheben, dann entweder `git tag v0.98 && git push origin v0.98` oder auf GitHub unter **Actions → Build & Release on Tag → Run workflow** (Branch `main`, Tag z. B. `v0.98`) starten – der Workflow legt Tag und Release selbst an und prüft, dass der Tag zur Version passt. Assets: WPF `win-x64`/`win-arm64` (ZIP), macOS `PictureGeoExif-<tag>-macOS-arm64.pkg` und `.zip`.
 
 ## Abhängigkeiten und Lizenzen
 

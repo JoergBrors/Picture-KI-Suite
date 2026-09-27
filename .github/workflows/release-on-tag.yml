@@ -4,11 +4,19 @@ on:
   push:
     tags:
       - '*'
+  # Manual release from the selected branch (normally main): creates the tag and the GitHub release.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release-Tag, z. B. v0.98 (Version muss zu <Version> in Directory.Build.props passen)'
+        required: true
+        default: 'v0.98'
 
 env:
   DOTNET_NOLOGO: 1
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   AVALONIA_TELEMETRY_OPTOUT: 1
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   windows:
@@ -17,6 +25,8 @@ jobs:
       contents: write
     strategy:
       fail-fast: false
+      # One after the other: the first job creates tag and release, the others only add their assets.
+      max-parallel: 1
       matrix:
         runtime: [win-x64, win-arm64]
     env:
@@ -33,6 +43,14 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+
+      - name: Check tag matches project version
+        shell: pwsh
+        run: |
+          $version = ([xml](Get-Content Directory.Build.props)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          $tag = "${{ env.RELEASE_TAG }}".TrimStart('v')
+          if (-not "$version".StartsWith($tag)) { throw "Tag ${{ env.RELEASE_TAG }} passt nicht zu <Version>$version</Version> in Directory.Build.props" }
+          "Version $version, Tag ${{ env.RELEASE_TAG }}"
 
       - name: Test
         if: matrix.runtime == 'win-x64'
@@ -56,7 +74,7 @@ jobs:
         shell: pwsh
         run: |
           # LICENSE, THIRD-PARTY-LICENSES.md and licenses/ are copied by the project into the output folder.
-          $zip = "PictureExifclone-${{ github.ref_name }}-${{ matrix.runtime }}.zip"
+          $zip = "PictureExifclone-${{ env.RELEASE_TAG }}-${{ matrix.runtime }}.zip"
           if (Test-Path $zip) { Remove-Item $zip -Force }
           Compress-Archive -Path "out\*" -DestinationPath $zip
           "ZIP_NAME=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
@@ -64,12 +82,13 @@ jobs:
       - name: Create/Update GitHub Release and upload asset
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
+          tag: ${{ env.RELEASE_TAG }}
+          commit: ${{ github.sha }}
+          name: Release ${{ env.RELEASE_TAG }}
           body: |
-            Automatisch erstelltes Release für Tag `${{ github.ref_name }}`.
+            Automatisch erstelltes Release für Tag `${{ env.RELEASE_TAG }}`.
 
-            **Build-Quelle:** Tag-Commit `${{ github.sha }}`
+            **Build-Quelle:** Commit `${{ github.sha }}`
 
             - Windows (WPF, self-contained single file): `PictureExifclone-<tag>-win-x64.zip`, `…-win-arm64.zip`
             - macOS Apple Silicon (Avalonia, ad hoc signiert, nicht notarisiert): Installer `PictureGeoExif-<tag>-macOS-arm64.pkg` oder `PictureGeoExif-<tag>-macOS-arm64.zip` – siehe docs/MacOS-Deployment.md (Gatekeeper)
@@ -104,15 +123,16 @@ jobs:
           artifacts/macos-arm64/PictureGeoExif.app/Contents/MacOS/PictureGeoExif --self-test
           sudo installer -pkg artifacts/macos-arm64/PictureGeoExif-macOS-arm64.pkg -target /
           /Applications/PictureGeoExif.app/Contents/MacOS/PictureGeoExif --self-test
-          mv artifacts/macos-arm64/PictureGeoExif-macOS-arm64.zip "PictureGeoExif-${{ github.ref_name }}-macOS-arm64.zip"
-          mv artifacts/macos-arm64/PictureGeoExif-macOS-arm64.pkg "PictureGeoExif-${{ github.ref_name }}-macOS-arm64.pkg"
+          mv artifacts/macos-arm64/PictureGeoExif-macOS-arm64.zip "PictureGeoExif-${{ env.RELEASE_TAG }}-macOS-arm64.zip"
+          mv artifacts/macos-arm64/PictureGeoExif-macOS-arm64.pkg "PictureGeoExif-${{ env.RELEASE_TAG }}-macOS-arm64.pkg"
 
       - name: Upload to GitHub Release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ github.ref_name }}
+          tag: ${{ env.RELEASE_TAG }}
+          commit: ${{ github.sha }}
           allowUpdates: true
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
-          artifacts: PictureGeoExif-${{ github.ref_name }}-macOS-arm64.zip,PictureGeoExif-${{ github.ref_name }}-macOS-arm64.pkg
+          artifacts: PictureGeoExif-${{ env.RELEASE_TAG }}-macOS-arm64.zip,PictureGeoExif-${{ env.RELEASE_TAG }}-macOS-arm64.pkg
           replacesArtifacts: false
