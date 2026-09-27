@@ -45,6 +45,7 @@ scripts/run-macos-local.sh                               # Debug-Start per dotne
 scripts/build-macos-arm64.sh                 # vollständig inkl. Tests
 scripts/build-macos-arm64.sh --skip-tests    # schneller
 scripts/build-macos-arm64.sh --dmg           # zusätzlich PictureGeoExif-macOS-arm64.dmg
+scripts/build-macos-arm64.sh --no-pkg        # ohne Installer-Paket (.pkg)
 scripts/build-macos-arm64.sh --no-adhoc-sign # ohne lokale Ad-hoc-Signatur (nicht empfohlen)
 ```
 
@@ -69,7 +70,7 @@ Das Skript führt aus:
 7. `Info.plist` aus `src/PictureGeoExif.Avalonia/macOS/Info.plist` einsetzen (`__VERSION__` ← `<Version>` aus `Directory.Build.props`, `__BUILD__` ← Build-Nummer), `PkgInfo`, `plutil -lint`
 8. Ressourcen (`Templates/`, `licenses/`, `LICENSE`, `THIRD-PARTY-LICENSES.md`, optional `PictureGeoExif.icns`) nach `Contents/Resources`
 9. Rechte setzen (`chmod`, ausführbares Programm 755), erweiterte Attribute entfernen; lokale **Ad-hoc-Signatur** des Bundles (`codesign --force --deep --sign -`), Begründung in [MacOS-Deployment.md](MacOS-Deployment.md#warum-eine-ad-hoc-signatur-des-bundles-nötig-ist)
-10. Ergebnis: `artifacts/macos-arm64/PictureGeoExif.app` und `PictureGeoExif-macOS-arm64.zip` (mit `ditto`, erhält Symlinks und Rechte)
+10. Ergebnis: `artifacts/macos-arm64/PictureGeoExif.app`, `PictureGeoExif-macOS-arm64.zip` (mit `ditto`, erhält Symlinks und Rechte) und der Installer **`PictureGeoExif-macOS-arm64.pkg`**: `pkgbuild` (Komponente nach `/Applications`, nicht relokierbar) + `productbuild` mit `src/PictureGeoExif.Avalonia/macOS/Distribution.xml` (nur arm64, ab macOS 14, zeigt die MIT-Lizenz); unsigniert als Paket
 
 ## Bundle-Struktur
 

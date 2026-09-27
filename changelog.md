@@ -14,7 +14,8 @@ Alle nennenswerten Änderungen an PictureGeoExif. Format angelehnt an [Keep a Ch
 - **Help → Diagnostics** mit „Diagnoseinformationen kopieren“, Logdatei, `PictureGeoExif --self-test`.
 - **Datenschutzprüfung** (`PrivacyGuard`) vor jeder KI-Anfrage: keine Pfade, keine Fotos-Kennungen, keine exakten GPS-Daten.
 - macOS-Schlüsselbund für API-Schlüssel.
-- CI-Jobs für macOS arm64 (Artifact `PictureGeoExif-macOS-arm64`) und Linux; Release hängt das macOS-ZIP an.
+- **Installer `PictureGeoExif-macOS-arm64.pkg`** (installiert nach /Applications, nur Apple Silicon, ab macOS 14).
+- CI-Jobs für macOS arm64 (Artifacts `PictureGeoExif-macOS-arm64` und `…-pkg`, Test-Installation auf dem Runner) und Linux; Releases enthalten ZIP und `.pkg` für macOS.
 
 ### Geändert
 

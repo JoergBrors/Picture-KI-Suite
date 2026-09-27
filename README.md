@@ -33,7 +33,7 @@ macOS 27 als Zielsystem (Mindestversion laut Info.plist: macOS 14)
 .NET muss bei self-contained Build nicht separat installiert werden
 ```
 
-- Avalonia-Anwendung als `PictureGeoExif.app`
+- Avalonia-Anwendung als `PictureGeoExif.app`; Installation per **`PictureGeoExif-macOS-arm64.pkg`** nach /Applications oder per ZIP
 - Phase 1: **ohne Developer-ID-Signatur** (nur lokale Ad-hoc-Signatur) und **nicht notarisiert** – macOS zeigt beim ersten Start eines heruntergeladenen Builds eine Gatekeeper-Warnung, siehe [MacOS-Deployment.md](docs/MacOS-Deployment.md)
 - Intel-Macs werden nicht getestet und nicht unterstützt.
 
@@ -47,7 +47,7 @@ Voraussetzung: [.NET SDK 10](https://dotnet.microsoft.com/download/dotnet/10.0) 
 git clone https://github.com/JoergBrors/PictureGeoExif.git && cd PictureGeoExif
 dotnet test PictureGeoExif.CrossPlatform.slnf     # Tests
 scripts/run-macos-local.sh                        # Entwicklungsstart (dotnet run)
-scripts/build-macos-arm64.sh                      # → artifacts/macos-arm64/PictureGeoExif.app + ZIP
+scripts/build-macos-arm64.sh                      # → artifacts/macos-arm64/PictureGeoExif.app, ZIP und .pkg-Installer
 open artifacts/macos-arm64/PictureGeoExif.app
 ```
 

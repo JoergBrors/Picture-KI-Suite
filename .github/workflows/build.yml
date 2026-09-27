@@ -55,7 +55,7 @@ jobs:
           retention-days: 14
 
   macos:
-    name: macOS arm64 (restore, build, test, publish, .app)
+    name: macOS arm64 (restore, build, test, publish, .app, .pkg)
     # Apple Silicon runner; osx-arm64 is the runtime identifier for all M-series Macs (M1 … M4).
     runs-on: macos-15
     permissions:
@@ -87,6 +87,14 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Upload installer (pkg)
+        uses: actions/upload-artifact@v4
+        with:
+          name: PictureGeoExif-macOS-arm64-pkg
+          path: artifacts/macos-arm64/PictureGeoExif-macOS-arm64.pkg
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Verify bundle
         run: |
           APP=artifacts/macos-arm64/PictureGeoExif.app
@@ -96,6 +104,12 @@ jobs:
           codesign --verify --deep --strict --verbose=2 "$APP"   # ad-hoc sealed bundle (no Developer ID)
           # Starts the bundled executable without UI: loads native libraries, Photos.framework and ImageIO.
           "$APP/Contents/MacOS/PictureGeoExif" --self-test
+
+      - name: Install pkg and self-test the installed app
+        run: |
+          sudo installer -pkg artifacts/macos-arm64/PictureGeoExif-macOS-arm64.pkg -target /
+          pkgutil --pkg-info net.brors.picturegeoexif
+          /Applications/PictureGeoExif.app/Contents/MacOS/PictureGeoExif --self-test
 
       # Unit, platform (incl. real PhotoKit/ImageIO interop) and headless UI tests.
       - name: Test

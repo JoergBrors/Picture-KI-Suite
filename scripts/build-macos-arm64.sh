@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Builds PictureGeoExif.app for Apple Silicon (osx-arm64) – unsigned development build (no Developer ID, no notarization).
+# Builds PictureGeoExif.app and the installer PictureGeoExif-macOS-arm64.pkg for Apple Silicon (osx-arm64)
+# – development build: ad-hoc signature only, no Developer ID, no notarization.
 #
-#   scripts/build-macos-arm64.sh [--skip-tests] [--no-adhoc-sign] [--dmg] [--build-number N]
+#   scripts/build-macos-arm64.sh [--skip-tests] [--no-adhoc-sign] [--no-pkg] [--dmg] [--build-number N]
 #
-# Result: artifacts/macos-arm64/PictureGeoExif.app and artifacts/macos-arm64/PictureGeoExif-macOS-arm64.zip
+# Result: artifacts/macos-arm64/PictureGeoExif.app, PictureGeoExif-macOS-arm64.zip and PictureGeoExif-macOS-arm64.pkg (macOS only)
 # Details: docs/MacOS-Build.md, docs/MacOS-Deployment.md
 set -euo pipefail
 
@@ -19,9 +20,11 @@ OUT="artifacts/macos-arm64"
 PUBLISH="$OUT/publish"
 BUNDLE="$OUT/$APP_NAME.app"
 ZIP="$OUT/$APP_NAME-macOS-arm64.zip"
+PKG="$OUT/$APP_NAME-macOS-arm64.pkg"
 RUN_TESTS=1
 ADHOC_SIGN=1
 MAKE_DMG=0
+MAKE_PKG=1
 BUILD_NUMBER="${GITHUB_RUN_NUMBER:-$(date +%Y%m%d%H%M)}"
 
 while [[ $# -gt 0 ]]; do
@@ -30,6 +33,7 @@ while [[ $# -gt 0 ]]; do
     --no-adhoc-sign) ADHOC_SIGN=0 ;;
     --adhoc-sign) ADHOC_SIGN=1 ;;
     --dmg) MAKE_DMG=1 ;;
+    --no-pkg) MAKE_PKG=0 ;;
     --build-number) BUILD_NUMBER="$2"; shift ;;
     -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
     *) echo "Unbekannte Option: $1" >&2; exit 2 ;;
@@ -125,6 +129,32 @@ if command -v ditto >/dev/null; then
 else
   (cd "$OUT" && zip -qry "$(basename "$ZIP")" "$APP_NAME.app")
 fi
+if [[ $MAKE_PKG -eq 1 ]]; then
+  if command -v pkgbuild >/dev/null && command -v productbuild >/dev/null; then
+    step "Installer-Paket (.pkg) → /Applications"
+    # Component package: installs PictureGeoExif.app to /Applications and never "relocates" into another copy of the app
+    # found elsewhere on disk. The product archive around it restricts installation to arm64 and macOS 14+ and shows the license.
+    PKG_WORK="$OUT/pkg-work"
+    rm -rf "$PKG_WORK"; mkdir -p "$PKG_WORK/root" "$PKG_WORK/packages" "$PKG_WORK/resources"
+    ditto "$BUNDLE" "$PKG_WORK/root/$APP_NAME.app"
+    pkgbuild --analyze --root "$PKG_WORK/root" "$PKG_WORK/component.plist"
+    plutil -replace 0.BundleIsRelocatable -bool NO "$PKG_WORK/component.plist"
+    pkgbuild --root "$PKG_WORK/root" --component-plist "$PKG_WORK/component.plist" \
+      --identifier net.brors.picturegeoexif --version "$VERSION" --install-location /Applications \
+      "$PKG_WORK/packages/$APP_NAME-component.pkg"
+    pkgutil --payload-files "$PKG_WORK/packages/$APP_NAME-component.pkg" > "$PKG_WORK/payload.txt"
+    grep -q "PictureGeoExif.app/Contents/MacOS/PictureGeoExif" "$PKG_WORK/payload.txt" \
+      || { echo "FEHLER: Das Komponentenpaket enthält PictureGeoExif.app nicht." >&2; exit 1; }
+    sed "s/__VERSION__/$VERSION/g" src/PictureGeoExif.Avalonia/macOS/Distribution.xml > "$PKG_WORK/Distribution.xml"
+    cp LICENSE "$PKG_WORK/resources/LICENSE.txt"
+    productbuild --distribution "$PKG_WORK/Distribution.xml" --package-path "$PKG_WORK/packages" \
+      --resources "$PKG_WORK/resources" "$PKG"
+    rm -rf "$PKG_WORK"
+    installer -pkginfo -pkg "$PKG"
+  else
+    echo "Hinweis: pkgbuild/productbuild nicht verfügbar (kein macOS) – .pkg übersprungen." >&2
+  fi
+fi
 if [[ $MAKE_DMG -eq 1 ]]; then
   if command -v hdiutil >/dev/null; then
     hdiutil create -volname "$APP_NAME" -srcfolder "$BUNDLE" -ov -format UDZO "$OUT/$APP_NAME-macOS-arm64.dmg"
@@ -138,4 +168,5 @@ echo
 echo "Fertig:"
 echo "  $BUNDLE"
 echo "  $ZIP"
+if [[ -f "$PKG" ]]; then echo "  $PKG"; fi
 echo "Start:  open \"$BUNDLE\"   oder direkt:  \"$BUNDLE/Contents/MacOS/$APP_NAME\""

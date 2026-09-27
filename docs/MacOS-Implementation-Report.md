@@ -21,7 +21,7 @@ Stand: 27.09.2026 · Version 0.98.0 · Branch `claude/elegant-shannon-rfkwle`
 - KI-Ablauf aus dem WPF-Code-behind in `AiMetadataWorkflow` extrahiert; `PrivacyGuard` prüft jede ausgehende Anfrage.
 - macOS-Schlüsselbund für API-Schlüssel.
 - Logging (Konsole + Datei, Startzeile mit allen geforderten Angaben), `--self-test`.
-- `Info.plist` mit `NSPhotoLibraryUsageDescription` (Deutsch), `scripts/build-macos-arm64.sh`, `scripts/run-macos-local.sh`, ZIP, optional DMG.
+- `Info.plist` mit `NSPhotoLibraryUsageDescription` (Deutsch), `scripts/build-macos-arm64.sh`, `scripts/run-macos-local.sh`, ZIP, **Installer `.pkg`** (nach /Applications, arm64, ab macOS 14), optional DMG.
 - GitHub Actions: Windows (Build, Test, Paketaudit, Publish), macOS arm64 (Restore, Build, Test, Publish, `.app`, Prüfung, Artifact), Linux (Tests); Release-Workflow hängt das macOS-ZIP an Releases.
 - Dokumentation: Architektur, PhotoKit, Build, Deployment, Troubleshooting, dieser Bericht, README.
 

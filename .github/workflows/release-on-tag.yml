@@ -72,7 +72,7 @@ jobs:
             **Build-Quelle:** Tag-Commit `${{ github.sha }}`
 
             - Windows (WPF, self-contained single file): `PictureExifclone-<tag>-win-x64.zip`, `…-win-arm64.zip`
-            - macOS Apple Silicon (Avalonia, unsigniert): `PictureGeoExif-<tag>-macOS-arm64.zip` – siehe docs/MacOS-Deployment.md (Gatekeeper)
+            - macOS Apple Silicon (Avalonia, ad hoc signiert, nicht notarisiert): Installer `PictureGeoExif-<tag>-macOS-arm64.pkg` oder `PictureGeoExif-<tag>-macOS-arm64.zip` – siehe docs/MacOS-Deployment.md (Gatekeeper)
 
             **Enthaltene Lizenzen:** LICENSE (MIT), THIRD-PARTY-LICENSES.md, licenses/
           draft: false
@@ -82,6 +82,8 @@ jobs:
           replacesArtifacts: true
 
   macos:
+    # After the Windows jobs, so only one job creates the GitHub release and the others update it.
+    needs: windows
     runs-on: macos-15
     permissions:
       contents: write
@@ -96,11 +98,14 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Build PictureGeoExif.app (unsigned, not notarized)
+      - name: Build PictureGeoExif.app and .pkg (ad-hoc signed, not notarized)
         run: |
           scripts/build-macos-arm64.sh --skip-tests --build-number "${{ github.run_number }}"
           artifacts/macos-arm64/PictureGeoExif.app/Contents/MacOS/PictureGeoExif --self-test
+          sudo installer -pkg artifacts/macos-arm64/PictureGeoExif-macOS-arm64.pkg -target /
+          /Applications/PictureGeoExif.app/Contents/MacOS/PictureGeoExif --self-test
           mv artifacts/macos-arm64/PictureGeoExif-macOS-arm64.zip "PictureGeoExif-${{ github.ref_name }}-macOS-arm64.zip"
+          mv artifacts/macos-arm64/PictureGeoExif-macOS-arm64.pkg "PictureGeoExif-${{ github.ref_name }}-macOS-arm64.pkg"
 
       - name: Upload to GitHub Release
         uses: ncipollo/release-action@v1
@@ -109,5 +114,5 @@ jobs:
           allowUpdates: true
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
-          artifacts: PictureGeoExif-${{ github.ref_name }}-macOS-arm64.zip
+          artifacts: PictureGeoExif-${{ github.ref_name }}-macOS-arm64.zip,PictureGeoExif-${{ github.ref_name }}-macOS-arm64.pkg
           replacesArtifacts: false

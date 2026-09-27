@@ -30,6 +30,21 @@ Das ist **keine** Developer-ID-Signierung und **keine** Notarisierung; es wird k
 
 Hinweis: Bei ad-hoc-signierten Apps hängt die Fotos-Freigabe (TCC) an der Code-Identität. Nach jedem Neubau kann macOS erneut fragen bzw. muss die Freigabe unter Systemeinstellungen → Datenschutz & Sicherheit → Fotos neu gesetzt werden. Ebenso kann der Schlüsselbund nach einem Neubau erneut um Zugriff auf gespeicherte API-Schlüssel bitten.
 
+## Installation mit dem Installer (.pkg)
+
+`PictureGeoExif-macOS-arm64.pkg` (CI-Artifact bzw. Release-Asset) installiert `PictureGeoExif.app` nach **/Applications**.
+
+- Doppelklick auf das `.pkg` → Lizenz bestätigen → Installieren (Administratorkennwort erforderlich).
+- Der Installer läuft nur auf Apple Silicon (`hostArchitectures="arm64"`) und ab macOS 14.
+- Das Paket ist **nicht** mit einem „Developer ID Installer“-Zertifikat signiert. Bei einem heruntergeladenen `.pkg` zeigt macOS deshalb „… kann nicht geöffnet werden, da es von einem nicht verifizierten Entwickler stammt“. Freigabe: Systemeinstellungen → Datenschutz & Sicherheit → „Dennoch öffnen“, oder per Terminal:
+
+  ```bash
+  sudo installer -pkg PictureGeoExif-macOS-arm64.pkg -target /
+  ```
+- Eine Neuinstallation ersetzt `/Applications/PictureGeoExif.app`; Einstellungen, Caches und Logs im Benutzerordner bleiben erhalten.
+- Deinstallation: `sudo rm -rf /Applications/PictureGeoExif.app && sudo pkgutil --forget net.brors.picturegeoexif`; optional `~/Library/Application Support/PictureGeoExif`, `~/Library/Caches/PictureGeoExif`, `~/Library/Logs/PictureGeoExif` löschen.
+- Für Firmen-Rollouts (MDM) ist später ein mit „Developer ID Installer“ signiertes und notarisiertes Paket nötig (`productsign`, `notarytool`).
+
 ## Lokaler Start
 
 ```bash
