@@ -98,7 +98,7 @@ jobs:
 
       - name: Build PictureGeoExif.app (unsigned, not notarized)
         run: |
-          scripts/build-macos-arm64.sh --build-number "${{ github.run_number }}"
+          scripts/build-macos-arm64.sh --skip-tests --build-number "${{ github.run_number }}"
           artifacts/macos-arm64/PictureGeoExif.app/Contents/MacOS/PictureGeoExif --self-test
           mv artifacts/macos-arm64/PictureGeoExif-macOS-arm64.zip "PictureGeoExif-${{ github.ref_name }}-macOS-arm64.zip"
 

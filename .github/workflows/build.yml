@@ -74,10 +74,18 @@ jobs:
           uname -m
           dotnet --info | head -n 30
 
-      # Restore, tests (incl. macOS PhotoKit/ImageIO interop tests), Release build, publish osx-arm64, .app, zip.
+      # The package is built and uploaded first, so the .app artifact exists even if a later check fails.
       # No Developer ID signing and no notarization in this phase.
-      - name: Build PictureGeoExif.app
-        run: scripts/build-macos-arm64.sh --build-number "${{ github.run_number }}"
+      - name: Build PictureGeoExif.app (restore, Release build, publish osx-arm64, bundle, zip)
+        run: scripts/build-macos-arm64.sh --skip-tests --build-number "${{ github.run_number }}"
+
+      - name: Upload .app (zip)
+        uses: actions/upload-artifact@v4
+        with:
+          name: PictureGeoExif-macOS-arm64
+          path: artifacts/macos-arm64/PictureGeoExif-macOS-arm64.zip
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Verify bundle
         run: |
@@ -85,16 +93,14 @@ jobs:
           plutil -lint "$APP/Contents/Info.plist"
           file "$APP/Contents/MacOS/PictureGeoExif"
           lipo -archs "$APP/Contents/MacOS/PictureGeoExif" | grep -q arm64
-          codesign --verify --verbose=2 "$APP/Contents/MacOS/PictureGeoExif" || true
+          codesign -dv "$APP/Contents/MacOS/PictureGeoExif" || true   # apphost signature is already enforced by the build script
           # Starts the bundled executable without UI: loads native libraries, Photos.framework and ImageIO.
           "$APP/Contents/MacOS/PictureGeoExif" --self-test
 
-      - name: Upload .app (zip)
-        uses: actions/upload-artifact@v4
-        with:
-          name: PictureGeoExif-macOS-arm64
-          path: artifacts/macos-arm64/PictureGeoExif-macOS-arm64.zip
-          retention-days: 14
+      # Unit, platform (incl. real PhotoKit/ImageIO interop) and headless UI tests.
+      - name: Test
+        if: always()
+        run: dotnet test PictureGeoExif.CrossPlatform.slnf -c Release
 
   linux:
     name: Linux (cross-platform libraries and headless UI tests)
