@@ -1,0 +1,15 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:md="using:PictureGeoExif.Metadata"
+             xmlns:views="using:PictureGeoExif.Desktop.Views"
+             x:Class="PictureGeoExif.Desktop.Views.MetadataTable"
+             x:DataType="views:MetadataTable">
+  <DataGrid x:Name="Grid" IsReadOnly="True" AutoGenerateColumns="False" CanUserSortColumns="True" CanUserResizeColumns="True"
+            GridLinesVisibility="Horizontal" ItemsSource="{Binding Entries, RelativeSource={RelativeSource AncestorType=views:MetadataTable}}">
+    <DataGrid.Columns>
+      <DataGridTextColumn Header="Bereich" Binding="{Binding Directory}" x:DataType="md:MetadataEntry" Width="150" />
+      <DataGridTextColumn Header="Name" Binding="{Binding Name}" x:DataType="md:MetadataEntry" Width="220" />
+      <DataGridTextColumn Header="Wert" Binding="{Binding Value}" x:DataType="md:MetadataEntry" Width="*" />
+    </DataGrid.Columns>
+  </DataGrid>
+</UserControl>

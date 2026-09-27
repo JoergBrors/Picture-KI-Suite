@@ -1,0 +1,202 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PictureGeoExif.Desktop.ViewModels"
+        xmlns:views="using:PictureGeoExif.Desktop.Views"
+        xmlns:photos="using:PictureGeoExif.Core.Photos"
+        xmlns:controls="using:PictureGeoExif.Desktop.Controls"
+        x:Class="PictureGeoExif.Desktop.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="PictureGeoExif"
+        Width="1440" Height="900" MinWidth="1000" MinHeight="640"
+        WindowStartupLocation="CenterScreen"
+        DragDrop.AllowDrop="True">
+
+  <DockPanel>
+    <NativeMenuBar DockPanel.Dock="Top" />
+
+    <!-- Status bar -->
+    <Border DockPanel.Dock="Bottom" Padding="10,4" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding Status}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+        <ProgressBar Grid.Column="1" Width="180" IsVisible="{Binding IsBusy}" IsIndeterminate="{Binding Progress, Converter={x:Static ObjectConverters.IsNull}}"
+                     Value="{Binding Progress, FallbackValue=0}" Minimum="0" Maximum="100" />
+      </Grid>
+    </Border>
+
+    <Grid ColumnDefinitions="280,4,360,4,*">
+
+      <!-- ================= Sources ================= -->
+      <ScrollViewer Grid.Column="0" Padding="12,8">
+        <StackPanel Spacing="2">
+          <TextBlock Classes="header" Text="Quellen" Margin="0,0,0,4" />
+          <RadioButton GroupName="source" Content="Dateien" IsChecked="{Binding IsFilesSource}" />
+          <RadioButton GroupName="source" Content="Apple Fotos" IsChecked="{Binding IsPhotosSource}" />
+
+          <!-- Files -->
+          <StackPanel IsVisible="{Binding IsFilesSource}" Margin="0,8,0,0">
+            <WrapPanel Classes="buttons">
+              <Button Content="Bilder öffnen …" Command="{Binding OpenFilesCommand}" />
+              <Button Content="Ordner öffnen …" Command="{Binding OpenFolderCommand}" />
+              <Button Content="Liste leeren" Command="{Binding ClearFilesCommand}" />
+            </WrapPanel>
+            <TextBlock Text="{Binding FileCountText}" Classes="hint" />
+            <TextBlock Classes="hint" Text="Bilder auch per Drag &amp; Drop aus dem Finder bzw. Explorer auf das Fenster ziehen." />
+          </StackPanel>
+
+          <!-- Apple Photos -->
+          <StackPanel IsVisible="{Binding IsPhotosSource}" Margin="0,8,0,0" Spacing="4">
+            <Border Padding="10" CornerRadius="6" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Apple Fotos Zugriff" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Photos.StatusText}" TextWrapping="Wrap" />
+                <Button Content="Zugriff anfordern" Command="{Binding Photos.RequestAccessCommand}" IsVisible="{Binding Photos.CanRequestAccess}" Classes="accent" />
+                <Button Content="Fotomediathek öffnen" Command="{Binding Photos.OpenLibraryCommand}" IsVisible="{Binding Photos.CanOpenLibrary}" />
+                <TextBlock Text="{Binding Photos.Message}" IsVisible="{Binding Photos.Message, Converter={x:Static ObjectConverters.IsNotNull}}" Classes="hint" />
+              </StackPanel>
+            </Border>
+            <TextBlock Classes="header" Text="Alben" IsVisible="{Binding Photos.CanOpenLibrary}" />
+            <ListBox ItemsSource="{Binding Photos.Albums}" SelectedItem="{Binding Photos.SelectedAlbum}" MaxHeight="320"
+                     IsVisible="{Binding Photos.CanOpenLibrary}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="photos:PhotoAlbum">
+                  <TextBlock Text="{Binding DisplayTitle}" TextTrimming="CharacterEllipsis" />
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock Text="{Binding Photos.CountText}" Classes="hint" />
+            <Button Content="Weitere Fotos laden" Command="{Binding Photos.LoadMoreCommand}" IsVisible="{Binding Photos.HasMore}" />
+            <TextBlock Classes="hint" Text="Apple-Fotos-Originale werden nur gelesen. Bearbeiten und GPS schreiben erst nach „In Dateien übernehmen“." />
+          </StackPanel>
+
+          <Separator Margin="0,10" />
+          <TextBlock Classes="header" Text="GPS" />
+          <TextBlock Text="{Binding CurrentGpsText}" TextWrapping="Wrap" />
+          <TextBlock Classes="hint" Text="Koordinate per Klick in die Karte oder aus einem Referenzbild übernehmen." />
+          <WrapPanel Classes="buttons" Margin="0,6,0,0">
+            <Button Content="GPS auf ausgewähltes Bild" Command="{Binding ApplyGpsCommand}" />
+            <Button Content="GPS auf alle" Command="{Binding ApplyGpsToAllCommand}" />
+            <Button Content="Referenzbild …" Command="{Binding UseReferenceImageCommand}" />
+          </WrapPanel>
+
+          <TextBlock Classes="header" Text="Speichern (Kopien, Originale bleiben unverändert)" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding OutputFolder}" Classes="hint" />
+          <WrapPanel Classes="buttons" Margin="0,6,0,0">
+            <Button Content="Ausgabeordner …" Command="{Binding ChangeOutputFolderCommand}" />
+            <Button Content="Ausgewähltes speichern" Command="{Binding SaveSelectedCommand}" />
+            <Button Content="Alle speichern" Command="{Binding SaveAllCommand}" />
+            <Button Content="Rückgängig" Command="{Binding UndoImageCommand}" />
+          </WrapPanel>
+
+          <TextBlock Classes="header" Text="Trassen" />
+          <TextBlock Text="{Binding RouteGapMeters, StringFormat='Max. Abstand: {0:F0} m'}" />
+          <Slider Minimum="10" Maximum="2000" Value="{Binding RouteGapMeters}" />
+          <TextBlock Text="{Binding BranchMinMeters, StringFormat='Abzweig ab: {0:F0} m'}" />
+          <Slider Minimum="0" Maximum="100" Value="{Binding BranchMinMeters}" />
+          <CheckBox Content="Liste nach Trassen sortieren" IsChecked="{Binding SortByRoute}" />
+          <WrapPanel Classes="buttons" Margin="0,6,0,0">
+            <Button Content="An Wege anlegen" Command="{Binding RoadMatchCommand}" />
+            <Button Content="Routing …" Command="{Binding OpenRoadSettingsCommand}" />
+          </WrapPanel>
+          <TextBlock Text="{Binding RoadServerText}" Classes="hint" />
+
+          <Separator Margin="0,10" />
+          <WrapPanel Classes="buttons">
+            <Button Content="KI-Metadaten …" Command="{Binding OpenAiMetadataCommand}" />
+            <Button Content="Diagnose" Command="{Binding OpenDiagnosticsCommand}" />
+          </WrapPanel>
+        </StackPanel>
+      </ScrollViewer>
+
+      <GridSplitter Grid.Column="1" ResizeDirection="Columns" />
+
+      <!-- ================= Image list ================= -->
+      <Grid Grid.Column="2">
+        <ListBox x:Name="ImageList" ItemsSource="{Binding VisibleImages}" SelectedItem="{Binding SelectedImage}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:ImageEntryViewModel">
+              <Grid ColumnDefinitions="76,*" Margin="0,2">
+                <Border Width="72" Height="72" CornerRadius="4" ClipToBounds="True" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+                  <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                </Border>
+                <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" Spacing="1">
+                  <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Details}" FontSize="12" Opacity="0.75" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding GpsText}" FontSize="12" Opacity="0.75" />
+                  <TextBlock Text="{Binding RouteInfo}" FontSize="12" Opacity="0.75" IsVisible="{Binding RouteInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                  <TextBlock Text="{Binding LoadError}" FontSize="12" Foreground="OrangeRed" TextWrapping="Wrap"
+                             IsVisible="{Binding LoadError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                </StackPanel>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <TextBlock Text="Bilder hierher ziehen oder „Bilder öffnen …“ wählen" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Opacity="0.6" IsVisible="{Binding !VisibleImages.Count}" IsHitTestVisible="False" TextWrapping="Wrap" TextAlignment="Center" Margin="20" />
+      </Grid>
+
+      <GridSplitter Grid.Column="3" ResizeDirection="Columns" />
+
+      <!-- ================= Preview / map + metadata ================= -->
+      <Grid Grid.Column="4" RowDefinitions="*,4,*">
+        <TabControl Grid.Row="0" Padding="0">
+          <TabItem Header="Vorschau">
+            <DockPanel>
+              <WrapPanel DockPanel.Dock="Top" Classes="buttons" Margin="8,6,8,0">
+                <Button Content="Bearbeiten …" Command="{Binding EditImageCommand}" />
+                <Button Content="Original exportieren …" Command="{Binding ExportOriginalCommand}" />
+                <Button Content="In Dateien übernehmen" Command="{Binding ImportToFilesCommand}" />
+                <Button Content="Erneut versuchen" Command="{Binding RetryLoadCommand}" />
+                <Button Content="Entfernen" Command="{Binding RemoveImageCommand}" />
+              </WrapPanel>
+              <Grid>
+                <Image Source="{Binding Preview}" Stretch="Uniform" Margin="8" />
+                <Border IsVisible="{Binding PreviewStatus, Converter={x:Static ObjectConverters.IsNotNull}}" VerticalAlignment="Bottom" Margin="12"
+                        Padding="10,6" CornerRadius="6" Background="{DynamicResource SystemControlBackgroundAltMediumHighBrush}">
+                  <TextBlock Text="{Binding PreviewStatus}" TextWrapping="Wrap" />
+                </Border>
+              </Grid>
+            </DockPanel>
+          </TabItem>
+          <TabItem Header="Karte">
+            <Grid RowDefinitions="Auto,*,Auto">
+              <WrapPanel Margin="8,4" Orientation="Horizontal">
+                <CheckBox Content="Bilder" IsChecked="{Binding Map.ShowImages}" Margin="0,0,10,0" />
+                <CheckBox Content="Trassen" IsChecked="{Binding Map.ShowRoutes}" Margin="0,0,10,0" />
+                <CheckBox Content="Wegverlauf" IsChecked="{Binding Map.ShowRoad}" Margin="0,0,10,0" />
+                <CheckBox Content="Raster" IsChecked="{Binding Map.GridEnabled}" Margin="0,0,6,0" />
+                <NumericUpDown Value="{Binding Map.GridMeters}" Minimum="1" Maximum="1000" Increment="10" FormatString="0 m" Width="120" />
+                <Button Content="−" Click="ZoomOut_Click" Margin="10,0,4,0" />
+                <Button Content="+" Click="ZoomIn_Click" Margin="0,0,4,0" />
+                <Button Content="Alle zeigen" Click="Fit_Click" Margin="0,0,4,0" />
+                <Button Content="© OSM" Command="{Binding OpenMapAttributionCommand}" />
+              </WrapPanel>
+              <controls:OsmMapControl x:Name="MapView" Grid.Row="1" Map="{Binding Map}" />
+              <StackPanel Grid.Row="2" Margin="8,4">
+                <TextBlock Text="{Binding Map.Info}" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding Map.Status}" Classes="hint" />
+              </StackPanel>
+            </Grid>
+          </TabItem>
+        </TabControl>
+
+        <GridSplitter Grid.Row="1" ResizeDirection="Rows" />
+
+        <DockPanel Grid.Row="2">
+          <StackPanel DockPanel.Dock="Top" Margin="10,6,10,0">
+            <TextBlock Text="{Binding Metadata.Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding Metadata.Error}" Foreground="OrangeRed" TextWrapping="Wrap" IsVisible="{Binding Metadata.Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+          </StackPanel>
+          <TabControl Padding="0">
+            <TabItem Header="Allgemein"><views:MetadataTable Entries="{Binding Metadata.General}" /></TabItem>
+            <TabItem Header="EXIF"><views:MetadataTable Entries="{Binding Metadata.Exif}" /></TabItem>
+            <TabItem Header="GPS"><views:MetadataTable Entries="{Binding Metadata.Gps}" /></TabItem>
+            <TabItem Header="XMP"><views:MetadataTable Entries="{Binding Metadata.Xmp}" /></TabItem>
+            <TabItem Header="IPTC"><views:MetadataTable Entries="{Binding Metadata.Iptc}" /></TabItem>
+            <TabItem Header="Raw"><views:MetadataTable Entries="{Binding Metadata.Raw}" /></TabItem>
+          </TabControl>
+        </DockPanel>
+      </Grid>
+    </Grid>
+  </DockPanel>
+
+</Window>

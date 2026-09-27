@@ -1,0 +1,114 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PictureGeoExif.Desktop.ViewModels"
+        xmlns:ai="using:PictureGeoExif.Metadata.Ai"
+        x:Class="PictureGeoExif.Desktop.Views.AiMetadataWindow"
+        x:DataType="vm:AiMetadataViewModel"
+        Title="KI-Metadaten" Width="1300" Height="860" MinWidth="980" MinHeight="620" WindowStartupLocation="CenterOwner">
+  <DockPanel Margin="10">
+    <!-- Actions -->
+    <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,8,0,0">
+      <WrapPanel Classes="buttons">
+        <Button Content="Lokal prüfen (kostenlos)" Command="{Binding CheckCommand}" IsEnabled="{Binding !IsRunning}" />
+        <Button Content="Test (3 Bilder)" Command="{Binding TestCommand}" IsEnabled="{Binding !IsRunning}" />
+        <Button Content="Analyse starten" Command="{Binding StartCommand}" IsEnabled="{Binding !IsRunning}" Classes="accent" />
+        <Button Content="Abbrechen" Command="{Binding CancelCommand}" IsEnabled="{Binding IsRunning}" />
+        <Button Content="Ausgewählte Änderungen speichern" Command="{Binding ApplyCommand}" IsEnabled="{Binding !IsRunning}" />
+        <Button Content="Letztes Speichern rückgängig" Command="{Binding UndoCommand}" />
+        <ComboBox ItemsSource="{x:Static vm:AiMetadataViewModel.Seasons}" SelectedItem="{Binding ManualSeason}" Margin="12,0,6,6" />
+        <Button Content="Jahreszeit manuell vorschlagen" Command="{Binding ProposeSeasonCommand}" />
+      </WrapPanel>
+      <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="6" />
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
+        <TextBlock Grid.Column="1" Text="{Binding BudgetText}" Classes="hint" Margin="12,0,0,0" />
+      </Grid>
+    </StackPanel>
+
+    <TabControl>
+      <TabItem Header="Bilder &amp; Vorschläge">
+        <Grid ColumnDefinitions="2*,4,3*">
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
+              <ComboBox ItemsSource="{x:Static vm:AiMetadataViewModel.Filters}" SelectedIndex="{Binding FilterIndex}" />
+              <Button Content="Alle markieren" Command="{Binding SelectAllCommand}" />
+              <Button Content="Keine" Command="{Binding SelectNoneCommand}" />
+            </StackPanel>
+            <DataGrid ItemsSource="{Binding VisibleRows}" SelectedItem="{Binding SelectedRow}" AutoGenerateColumns="False" GridLinesVisibility="Horizontal">
+              <DataGrid.Columns>
+                <DataGridCheckBoxColumn Header="✓" Binding="{Binding Selected}" x:DataType="ai:AiImageRow" Width="40" />
+                <DataGridTextColumn Header="Bild" Binding="{Binding Name}" x:DataType="ai:AiImageRow" IsReadOnly="True" Width="*" />
+                <DataGridTextColumn Header="Status" Binding="{Binding Status}" x:DataType="ai:AiImageRow" IsReadOnly="True" Width="*" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </DockPanel>
+          <GridSplitter Grid.Column="1" ResizeDirection="Columns" />
+          <Grid Grid.Column="2" RowDefinitions="*,Auto,*" Margin="6,0,0,0">
+            <Image Source="{Binding Preview}" Stretch="Uniform" />
+            <TextBlock Grid.Row="1" Text="{Binding SelectedRow.PreferenceText, FallbackValue=''}" Classes="hint" Margin="0,4" />
+            <DataGrid Grid.Row="2" ItemsSource="{Binding SelectedRow.Changes, FallbackValue={x:Null}}" AutoGenerateColumns="False" GridLinesVisibility="Horizontal">
+              <DataGrid.Columns>
+                <DataGridCheckBoxColumn Header="Übernehmen" Binding="{Binding Accept}" x:DataType="ai:AiFieldChange" Width="95" />
+                <DataGridTextColumn Header="Feld" Binding="{Binding Field}" x:DataType="ai:AiFieldChange" IsReadOnly="True" Width="130" />
+                <DataGridTextColumn Header="Aktuell" Binding="{Binding Current}" x:DataType="ai:AiFieldChange" IsReadOnly="True" Width="*" />
+                <DataGridTextColumn Header="Vorschlag" Binding="{Binding Proposed}" x:DataType="ai:AiFieldChange" IsReadOnly="True" Width="*" />
+                <DataGridTextColumn Header="Quelle" Binding="{Binding Source}" x:DataType="ai:AiFieldChange" IsReadOnly="True" Width="110" />
+                <DataGridTextColumn Header="Beleg" Binding="{Binding Evidence}" x:DataType="ai:AiFieldChange" IsReadOnly="True" Width="*" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </Grid>
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="Anbieter &amp; Kosten">
+        <ScrollViewer>
+          <StackPanel Spacing="6" MaxWidth="720" HorizontalAlignment="Left">
+            <TextBlock Classes="header" Text="Anbieterprofil" />
+            <ComboBox ItemsSource="{Binding Providers}" SelectedItem="{Binding SelectedProvider}" MinWidth="360" />
+            <TextBlock Classes="header" Text="{Binding CredentialStoreName, StringFormat='API-Schlüssel ({0})'}" />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBox Text="{Binding KeyInput}" PasswordChar="•" Width="360" PlaceholderText="Schlüssel eingeben" />
+              <Button Content="Speichern" Command="{Binding SaveKeyCommand}" />
+              <Button Content="Löschen" Command="{Binding DeleteKeyCommand}" />
+            </StackPanel>
+            <TextBlock Text="{Binding KeyStatus}" Classes="hint" />
+            <TextBlock Classes="header" Text="Preise in USD pro 1 Mio. Tokens (selbst prüfen und datieren)" />
+            <Grid ColumnDefinitions="Auto,160" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6" ColumnSpacing="10">
+              <TextBlock Text="Eingabe" VerticalAlignment="Center" /><TextBox Grid.Column="1" Text="{Binding PriceInput}" />
+              <TextBlock Grid.Row="1" Text="Eingabe (Cache)" VerticalAlignment="Center" /><TextBox Grid.Row="1" Grid.Column="1" Text="{Binding PriceCached}" />
+              <TextBlock Grid.Row="2" Text="Ausgabe" VerticalAlignment="Center" /><TextBox Grid.Row="2" Grid.Column="1" Text="{Binding PriceOutput}" />
+              <TextBlock Grid.Row="3" Text="Geprüft am" VerticalAlignment="Center" /><CalendarDatePicker Grid.Row="3" Grid.Column="1" SelectedDate="{Binding PriceDate}" />
+              <TextBlock Grid.Row="4" Text="Tokens je Bild (Schätzung)" VerticalAlignment="Center" /><TextBox Grid.Row="4" Grid.Column="1" Text="{Binding TokenEstimate}" />
+            </Grid>
+            <TextBlock Classes="hint" Text="Ohne eingetragene und datierte Preise startet kein kostenpflichtiger Lauf. Übertragen werden nur verkleinerte Vorschauen ohne Metadaten, Datum ohne Uhrzeit und die Hemisphäre – keine Pfade, keine exakten GPS-Daten, keine Apple-Fotos-Kennungen." />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Vorlage &amp; JSON">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Bottom" Spacing="4" Margin="0,6,0,0">
+            <WrapPanel Classes="buttons">
+              <Button Content="Validieren &amp; übernehmen" Command="{Binding ApplyTemplateCommand}" />
+              <Button Content="Vorlage laden …" Command="{Binding LoadTemplateCommand}" />
+              <Button Content="Als neue Version speichern" Command="{Binding SaveTemplateCommand}" />
+              <Button Content="Standardvorlage" Command="{Binding DefaultTemplateCommand}" />
+            </WrapPanel>
+            <TextBlock Text="{Binding TemplateStatus}" Classes="hint" />
+          </StackPanel>
+          <TextBox Text="{Binding TemplateText}" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Menlo, Consolas, monospace" />
+        </DockPanel>
+      </TabItem>
+
+      <TabItem Header="Chat">
+        <DockPanel>
+          <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+            <TextBox Text="{Binding ChatInput}" PlaceholderText="z. B. „Setze für alle markierten Bilder die Jahreszeit Winter“" KeyDown="ChatInput_KeyDown" />
+            <Button Grid.Column="1" Content="Senden" Command="{Binding SendChatCommand}" IsEnabled="{Binding !IsRunning}" Margin="6,0,0,0" />
+          </Grid>
+          <TextBox Text="{Binding ChatLog}" IsReadOnly="True" TextWrapping="Wrap" />
+        </DockPanel>
+      </TabItem>
+    </TabControl>
+  </DockPanel>
+</Window>
