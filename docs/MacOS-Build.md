@@ -45,7 +45,7 @@ scripts/run-macos-local.sh                               # Debug-Start per dotne
 scripts/build-macos-arm64.sh                 # vollständig inkl. Tests
 scripts/build-macos-arm64.sh --skip-tests    # schneller
 scripts/build-macos-arm64.sh --dmg           # zusätzlich PictureGeoExif-macOS-arm64.dmg
-scripts/build-macos-arm64.sh --adhoc-sign    # optional: lokale Ad-hoc-Signatur des ganzen Bundles
+scripts/build-macos-arm64.sh --no-adhoc-sign # ohne lokale Ad-hoc-Signatur (nicht empfohlen)
 ```
 
 Das Skript führt aus:
@@ -68,7 +68,7 @@ Das Skript führt aus:
 6. `.app`-Bundle erzeugen, Publish-Ausgabe nach `Contents/MacOS`
 7. `Info.plist` aus `src/PictureGeoExif.Avalonia/macOS/Info.plist` einsetzen (`__VERSION__` ← `<Version>` aus `Directory.Build.props`, `__BUILD__` ← Build-Nummer), `PkgInfo`, `plutil -lint`
 8. Ressourcen (`Templates/`, `licenses/`, `LICENSE`, `THIRD-PARTY-LICENSES.md`, optional `PictureGeoExif.icns`) nach `Contents/Resources`
-9. Rechte setzen (`chmod`, ausführbares Programm 755), erweiterte Attribute entfernen
+9. Rechte setzen (`chmod`, ausführbares Programm 755), erweiterte Attribute entfernen; lokale **Ad-hoc-Signatur** des Bundles (`codesign --force --deep --sign -`), Begründung in [MacOS-Deployment.md](MacOS-Deployment.md#warum-eine-ad-hoc-signatur-des-bundles-nötig-ist)
 10. Ergebnis: `artifacts/macos-arm64/PictureGeoExif.app` und `PictureGeoExif-macOS-arm64.zip` (mit `ditto`, erhält Symlinks und Rechte)
 
 ## Bundle-Struktur
@@ -104,4 +104,4 @@ Gibt die Diagnosedaten aus, lädt Photos.framework (ohne Berechtigungsanfrage) u
 
 ## CI
 
-`.github/workflows/build.yml`, Job **macOS arm64** (`macos-15`, Apple Silicon): Restore, Tests (inkl. echter PhotoKit/ImageIO-Interop-Tests), Release-Build, Publish `osx-arm64`, `.app`, Prüfung (`plutil`, `lipo`, `--self-test`) und Upload als Artifact **PictureGeoExif-macOS-arm64**. Bei Tags hängt `release-on-tag.yml` das ZIP an das GitHub-Release. Keine Signierung, keine Notarisierung.
+`.github/workflows/build.yml`, Job **macOS arm64** (`macos-15`, Apple Silicon): zuerst Paket bauen (Restore, Release-Build, Publish `osx-arm64`, `.app`, ZIP) und als Artifact **PictureGeoExif-macOS-arm64** hochladen – so existiert das Paket auch dann, wenn eine spätere Prüfung scheitert –, danach Prüfung (`plutil`, `lipo`, `codesign --verify --deep --strict`, `--self-test`) und alle Tests inkl. echter PhotoKit/ImageIO-Interop-Tests. Bei Tags hängt `release-on-tag.yml` das ZIP an das GitHub-Release. Keine Signierung, keine Notarisierung.

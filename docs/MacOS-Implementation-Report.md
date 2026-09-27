@@ -2,7 +2,7 @@
 
 Stand: 27.09.2026 · Version 0.98.0 · Branch `claude/elegant-shannon-rfkwle`
 
-> **Wichtig:** Dieser Stand wurde in einer Linux-x64-Build-Umgebung (Container) entwickelt, gebaut und getestet. Ein Apple-Silicon-Mac mit macOS 27 stand dort nicht zur Verfügung. Alles, was nur auf echter macOS-Hardware geprüft werden kann (Fensterstart, Systemdialog für Fotos, Zugriff auf eine echte Mediathek, iCloud), ist unten als **PARTIAL** bzw. **offen** gekennzeichnet – nicht als bestanden. Der CI-Job „macOS arm64“ (`macos-15`, Apple Silicon) führt die macOS-Interop-Tests und den `--self-test` des fertigen Bundles aus und schließt damit einen Teil dieser Lücke, sobald er läuft.
+> **Wichtig:** Dieser Stand wurde in einer Linux-x64-Build-Umgebung (Container) entwickelt und dort gebaut und getestet. Zusätzlich lief der CI-Job „macOS arm64“ auf einem GitHub-Runner mit Apple Silicon und **macOS 15.7.9** (kein macOS 27, kein M4, ohne Bildschirmnutzung). Alles, was nur mit Oberfläche und echter Mediathek geprüft werden kann (Fensterstart, Systemdialog für Fotos, Mediathekszugriff, iCloud), ist unten als **PARTIAL** bzw. **offen** gekennzeichnet – nicht als bestanden.
 
 ## Status
 
@@ -35,7 +35,7 @@ Stand: 27.09.2026 · Version 0.98.0 · Branch `claude/elegant-shannon-rfkwle`
 ### Offen
 
 - Test auf echter Hardware (Apple M4, macOS 27): Start, Menüleiste, Fotos-Berechtigungsdialog, echte Mediathek, iCloud-Originale, Limited Library.
-- Developer-ID-Signierung, Notarisierung, Stapling (bewusst nicht Teil von Phase 1).
+- Developer-ID-Signierung, Notarisierung, Stapling (bewusst nicht Teil von Phase 1; das Bundle wird nur lokal ad hoc signiert).
 - App-Icon (`PictureGeoExif.icns`) – Platzhalter in Info.plist und Skript vorbereitet.
 - Schreiben in Apple Fotos (neue Assets/Versionen) – Phase 1 ist read-only.
 - Videos, Live-Photo-Videoanteile (Phase 1 konzentriert sich auf Bilder).
@@ -79,18 +79,21 @@ Ergebnisse in dieser Umgebung:
 | Bisherige Tests (Metadaten, Logik, Trassen, Map-Matching) | PASS (übernommen; WPF-Fenstertests nur unter Windows) |
 | `scripts/build-macos-arm64.sh` (Cross-Build unter Linux) | PASS: Bundle, Info.plist, Resources, ZIP; apphost `Mach-O 64-bit arm64` mit Ad-hoc-Signatur (LC_CODE_SIGNATURE) vom SDK; `libAvaloniaNative`, `libSkiaSharp`, `libHarfBuzzSharp` im Bundle |
 | `PictureGeoExif --self-test` (Linux) | PASS |
-| macOS-Interop-Tests, `--self-test` des Bundles auf Apple Silicon | in CI (`macos-15`) eingerichtet, Ergebnis steht aus |
+| CI macOS arm64 (GitHub-Runner, Apple Silicon, macOS 15.7.9): Tests inkl. PhotoKit/ImageIO-Interop, Release-Build, Publish, `.app`, Upload | PASS – Artifact `PictureGeoExif-macOS-arm64` (≈ 48 MB) |
+| `--self-test` des Bundles auf dem Runner | PASS: `Runtime Identifier: osx-arm64`, `ARM64: ja`, `PhotoKit available: ja`, `PhotoKit authorization: NotDetermined`, `PhotoKit request possible: ja` (Usage-Description aus Info.plist gefunden), `Decoder macOS ImageIO: PASS` |
+| `codesign --verify` des Bundles ohne Bundle-Signatur | FAIL („code has no resources but signature indicates they must be present“) → Bundle wird seitdem lokal ad hoc versiegelt, siehe [MacOS-Deployment.md](MacOS-Deployment.md) |
+| CI Windows / Linux | Linux PASS; Windows zunächst FAIL (Pfadlogik mit Unix-Pfaden unter Windows), behoben |
 | Start der Oberfläche auf Apple M4 / macOS 27 | offen (keine Hardware) |
 
 ## PhotoKit
 
 | Funktion | Status | Nachweis / Einschränkung |
 | --- | --- | --- |
-| Permission Request | **PARTIAL** | Status-Mapping (0–4, unbekannt → Denied), „nur bei NotDetermined“, „nie ohne NSPhotoLibraryUsageDescription“ per Unit-Test mit Fake-Fassade; Systemdialog nicht auf Hardware geprüft |
+| Permission Request | **PARTIAL** | Status-Mapping (0–4, unbekannt → Denied), „nur bei NotDetermined“, „nie ohne NSPhotoLibraryUsageDescription“ per Unit-Test; auf Apple Silicon (CI): Photos.framework geladen, Status `NotDetermined` gelesen, Usage-Description im Bundle erkannt; Systemdialog nicht geprüft |
 | Library Query | **PARTIAL** | Paging, Bildfilter, Favoriten-Prädikat per Fake getestet; `fetchAssetsWithOptions:`-Aufruf wird im CI-Job auf macOS nur bis zum Status geprüft (keine Mediathek-Freigabe im CI) |
 | Album Query | **PARTIAL** | Albumliste (Mediathek, Favoriten, Benutzer-, geteilte, intelligente Alben; ohne Ausgeblendet/Gelöscht) per Fake getestet; nicht auf echter Mediathek geprüft |
 | Asset Query | **PARTIAL** | Mapping (Typ, Subtypen inkl. RAW, Datum, Maße, Favorit, Standort, Originalname/UTI) getestet; nicht auf echter Mediathek geprüft |
-| Thumbnail | **PARTIAL** | PhotoKit-Weg (`PHImageManager`, synchron im Hintergrund, ohne Netz) implementiert; ImageIO-Rendering wird im CI auf macOS getestet |
+| Thumbnail | **PARTIAL** | PhotoKit-Weg (`PHImageManager`, synchron im Hintergrund, ohne Netz) implementiert, nicht auf echter Mediathek geprüft; ImageIO-Rendering auf Apple Silicon **PASS** (CI) |
 | Original Resource | **PARTIAL** | Auswahl Original vor Bearbeitung, Export atomar, kein Überschreiben, Abbruch, iCloud-Fehler per Fake getestet; `PHAssetResourceManager` nicht auf Hardware geprüft |
 | EXIF extraction | **PARTIAL** | Pipeline Original → Cache → `MetadataInspector` mit Fake-Mediathek getestet (JPEG); HEIC-Originale aus echter Mediathek nicht geprüft |
 
@@ -98,7 +101,7 @@ Ergebnisse in dieser Umgebung:
 
 1. **Keine Hardware-Verifikation** in dieser Umgebung (siehe oben). Vor einer Freigabe auf einem Apple-Silicon-Mac mit macOS 27 prüfen: Start per `open`, Menüleiste, Drag & Drop, Fotos-Zugriff anfordern/ablehnen/erlauben, Limited Library, Album mit > 1000 Fotos, iCloud-Original (offline/online), Original-Export HEIC/DNG, `--self-test`.
 2. **PhotoKit über die Objective-C-Laufzeit** statt Microsoft.macOS-Bindings (Begründung in [MacOS-PhotoKit.md](MacOS-PhotoKit.md)). Tippfehler in Selektoren würden erst zur Laufzeit auffallen; die Interop-Schicht ist deshalb klein gehalten und im CI auf macOS teilweise abgedeckt.
-3. **Unsigniert/nicht notarisiert:** Gatekeeper-Warnung bei heruntergeladenen Builds; Fotos- und Schlüsselbund-Freigaben können nach jedem Neubau erneut abgefragt werden.
+3. **Nur ad hoc signiert, nicht notarisiert:** Gatekeeper-Warnung bei heruntergeladenen Builds; Fotos- und Schlüsselbund-Freigaben können nach jedem Neubau erneut abgefragt werden.
 4. **Start aus dem Terminal:** Fotos-Freigabe gehört dann zum Terminal; per `dotnet run` ist keine Anfrage möglich (bewusst abgefangen).
 5. **HEIC/RAW:** Vorschau nur unter macOS (ImageIO); unter Windows/Linux nur Metadaten. GPS-Schreiben nur JPEG/PNG/TIFF; für HEIC/RAW XMP-Sidecar oder Export als JPEG.
 6. **Editor** öffnet nur ImageSharp-Formate (JPEG, PNG, TIFF, BMP, GIF, WebP); HEIC/RAW vorher exportieren/umwandeln.

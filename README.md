@@ -34,7 +34,7 @@ macOS 27 als Zielsystem (Mindestversion laut Info.plist: macOS 14)
 ```
 
 - Avalonia-Anwendung als `PictureGeoExif.app`
-- Phase 1: **unsigniert** und **nicht notarisiert** – macOS zeigt beim ersten Start eines heruntergeladenen Builds eine Gatekeeper-Warnung, siehe [MacOS-Deployment.md](docs/MacOS-Deployment.md)
+- Phase 1: **ohne Developer-ID-Signatur** (nur lokale Ad-hoc-Signatur) und **nicht notarisiert** – macOS zeigt beim ersten Start eines heruntergeladenen Builds eine Gatekeeper-Warnung, siehe [MacOS-Deployment.md](docs/MacOS-Deployment.md)
 - Intel-Macs werden nicht getestet und nicht unterstützt.
 
 ## Schnellstart

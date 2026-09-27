@@ -6,19 +6,27 @@ Phase 1 liefert ein lokal lauffähiges `.app`-Bundle **ohne** Developer-ID-Signi
 
 | Begriff | Was es ist | In Phase 1 |
 | --- | --- | --- |
-| **Ad-hoc-Signatur** | Signatur ohne Zertifikat (`codesign -s -`). Beweist nur die Integrität der Datei, nicht die Herkunft. Auf Apple Silicon ist sie für jeden arm64-Code **Pflicht**. | Das .NET SDK signiert den `apphost` beim Publish automatisch ad hoc; die mitgelieferten dylibs sind von ihren Herstellern signiert. **Kein zusätzlicher Schritt nötig.** Optional `--adhoc-sign` für das ganze Bundle. |
+| **Ad-hoc-Signatur** | Signatur ohne Zertifikat (`codesign -s -`). Beweist nur die Integrität, nicht die Herkunft. Auf Apple Silicon ist sie für jeden arm64-Code **Pflicht**. | Das Build-Skript versiegelt das Bundle **lokal ad hoc** (Begründung unten). Abschaltbar mit `--no-adhoc-sign`. |
 | **Developer-ID-Signierung** | Signatur mit einem Apple-Zertifikat (kostenpflichtiger Account), Hardened Runtime. Voraussetzung für Weitergabe ohne Gatekeeper-Warnung. | nein |
 | **Notarisierung** | Upload an Apple (`notarytool`), automatische Prüfung, Ticket. | nein |
 | **Stapling** | Ticket in das Bundle heften (`stapler`), damit die Prüfung offline gelingt. | nein |
 
-### Warum keine automatische Ad-hoc-Signatur des Bundles
+### Warum eine Ad-hoc-Signatur des Bundles nötig ist
 
-Sie ist technisch nicht zwingend: Der Kernel verlangt eine gültige Signatur für jeden **ausführbaren arm64-Code**. Das erfüllt der vom SDK signierte `apphost`; das Bundle selbst (Info.plist, Ressourcen) muss für einen lokalen Start nicht versiegelt sein. `scripts/build-macos-arm64.sh` prüft auf macOS die Signatur des `apphost` und bricht mit Hinweis ab, falls sie fehlt.
+Das .NET SDK signiert beim Publish nur den `apphost` als **einzelne** Datei. Liegt er als Hauptprogramm in `PictureGeoExif.app/Contents/MacOS`, behandelt macOS ihn als Teil des Bundles und erwartet eine Bundle-Signatur mit versiegelten Ressourcen. Auf dem macOS-CI-Runner (Apple Silicon, macOS 15.7) meldete `codesign --verify` für das unversiegelte Bundle:
 
-`--adhoc-sign` ist sinnvoll, wenn
+```text
+PictureGeoExif.app/Contents/MacOS/PictureGeoExif: code has no resources but signature indicates they must be present
+```
 
-- Dateien in `Contents/MacOS` nach dem Publish verändert wurden (z. B. ein Patch einer dylib) und macOS mit „Killed: 9“ oder „code signature invalid“ reagiert,
-- ein Werkzeug eine vollständig versiegelte App erwartet (`codesign --verify --deep --strict`).
+Folgen ohne Bundle-Signatur: Ein lokal gebautes Bundle startet zwar (kein Quarantäne-Attribut), ein **heruntergeladenes** ZIP meldet Gatekeeper aber als „beschädigt“ – ohne die Möglichkeit „Dennoch öffnen“. Deshalb führt `scripts/build-macos-arm64.sh` nach dem Zusammenbau aus:
+
+```bash
+codesign --force --deep --sign - --timestamp=none PictureGeoExif.app
+codesign --verify --deep --strict --verbose=2 PictureGeoExif.app
+```
+
+Das ist **keine** Developer-ID-Signierung und **keine** Notarisierung; es wird kein Zertifikat und kein Apple-Account benötigt. Schlägt die Signatur fehl, erzeugt das Skript das Paket trotzdem (mit Warnung); die CI prüft die Signatur anschließend streng.
 
 Hinweis: Bei ad-hoc-signierten Apps hängt die Fotos-Freigabe (TCC) an der Code-Identität. Nach jedem Neubau kann macOS erneut fragen bzw. muss die Freigabe unter Systemeinstellungen → Datenschutz & Sicherheit → Fotos neu gesetzt werden. Ebenso kann der Schlüsselbund nach einem Neubau erneut um Zugriff auf gespeicherte API-Schlüssel bitten.
 

@@ -93,7 +93,7 @@ jobs:
           plutil -lint "$APP/Contents/Info.plist"
           file "$APP/Contents/MacOS/PictureGeoExif"
           lipo -archs "$APP/Contents/MacOS/PictureGeoExif" | grep -q arm64
-          codesign -dv "$APP/Contents/MacOS/PictureGeoExif" || true   # apphost signature is already enforced by the build script
+          codesign --verify --deep --strict --verbose=2 "$APP"   # ad-hoc sealed bundle (no Developer ID)
           # Starts the bundled executable without UI: loads native libraries, Photos.framework and ImageIO.
           "$APP/Contents/MacOS/PictureGeoExif" --self-test
 

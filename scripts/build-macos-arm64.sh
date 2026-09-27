@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds PictureGeoExif.app for Apple Silicon (osx-arm64) – unsigned development build (no Developer ID, no notarization).
 #
-#   scripts/build-macos-arm64.sh [--skip-tests] [--adhoc-sign] [--dmg] [--build-number N]
+#   scripts/build-macos-arm64.sh [--skip-tests] [--no-adhoc-sign] [--dmg] [--build-number N]
 #
 # Result: artifacts/macos-arm64/PictureGeoExif.app and artifacts/macos-arm64/PictureGeoExif-macOS-arm64.zip
 # Details: docs/MacOS-Build.md, docs/MacOS-Deployment.md
@@ -20,13 +20,14 @@ PUBLISH="$OUT/publish"
 BUNDLE="$OUT/$APP_NAME.app"
 ZIP="$OUT/$APP_NAME-macOS-arm64.zip"
 RUN_TESTS=1
-ADHOC_SIGN=0
+ADHOC_SIGN=1
 MAKE_DMG=0
 BUILD_NUMBER="${GITHUB_RUN_NUMBER:-$(date +%Y%m%d%H%M)}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --skip-tests) RUN_TESTS=0 ;;
+    --no-adhoc-sign) ADHOC_SIGN=0 ;;
     --adhoc-sign) ADHOC_SIGN=1 ;;
     --dmg) MAKE_DMG=1 ;;
     --build-number) BUILD_NUMBER="$2"; shift ;;
@@ -100,14 +101,19 @@ chmod -R u+rwX,go+rX "$BUNDLE"
 chmod 755 "$BUNDLE/Contents/MacOS/$APP_NAME"
 if command -v xattr >/dev/null; then xattr -cr "$BUNDLE" || true; fi
 
-# Apple Silicon only runs arm64 code with at least an ad-hoc signature. The .NET SDK already signs the apphost
-# (Contents/MacOS/PictureGeoExif) ad hoc during publish, and the NuGet/runtime dylibs are signed by their vendors,
-# so no additional signature is needed by default. --adhoc-sign seals the whole bundle locally (see docs/MacOS-Deployment.md).
+# Local ad-hoc signature of the whole bundle (no Developer ID, no notarization). Technically required: the SDK signs the
+# apphost as a standalone binary; inside the bundle `codesign --verify` then fails with "code has no resources but
+# signature indicates they must be present" (seen on the macOS CI runner), and Gatekeeper reports a downloaded copy as
+# "damaged" instead of offering "Open Anyway". Sealing the bundle ad hoc fixes both. See docs/MacOS-Deployment.md.
 if [[ $ADHOC_SIGN -eq 1 ]]; then
   if command -v codesign >/dev/null; then
     step "Lokale Ad-hoc-Signatur des Bundles (keine Developer ID, keine Notarisierung)"
-    codesign --force --deep --sign - --timestamp=none "$BUNDLE"
-    codesign --verify --deep --strict --verbose=2 "$BUNDLE"
+    # A signing problem must not prevent the package; CI verifies the signature strictly after the upload.
+    if codesign --force --deep --sign - --timestamp=none "$BUNDLE" && codesign --verify --deep --strict --verbose=2 "$BUNDLE"; then
+      echo "Ad-hoc-Signatur OK."
+    else
+      echo "WARNUNG: Ad-hoc-Signatur fehlgeschlagen – Bundle bleibt unsigniert (Start ggf. nur nach xattr -dr com.apple.quarantine)." >&2
+    fi
   else
     echo "WARNUNG: codesign nicht gefunden (kein macOS) – Ad-hoc-Signatur übersprungen." >&2
   fi
