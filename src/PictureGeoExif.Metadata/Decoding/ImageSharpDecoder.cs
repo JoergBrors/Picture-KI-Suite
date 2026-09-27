@@ -22,6 +22,8 @@ public sealed class ImageSharpDecoder : IImageDecoder
         if (Math.Max(image.Width, image.Height) > maxEdge)
             image.Mutate(x => x.Resize(new ResizeOptions { Size = new Size(maxEdge, maxEdge), Mode = ResizeMode.Max, Sampler = KnownResamplers.Lanczos3 }));
         image.Mutate(x => x.BackgroundColor(Color.White));
+        // Previews never carry EXIF/XMP/IPTC (the encoder flag alone does not remove existing profiles).
+        image.Metadata.ExifProfile = null; image.Metadata.XmpProfile = null; image.Metadata.IptcProfile = null;
         using var stream = new MemoryStream();
         image.SaveAsJpeg(stream, new JpegEncoder { Quality = 80, SkipMetadata = true });
         return (byte[]?)stream.ToArray();
