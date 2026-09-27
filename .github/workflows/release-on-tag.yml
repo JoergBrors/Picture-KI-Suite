@@ -1,0 +1,112 @@
+name: Build & Release on Tag
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build_and_release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [win-x64, win-arm64]
+
+    env:
+      CONFIGURATION: Release
+      PROJECT_PATH: PictureExifclone.csproj
+
+    steps:
+      # Build exactly the tagged commit (not whatever main points to).
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET (global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Test
+        if: matrix.runtime == 'win-x64'
+        run: dotnet test PictureExifclone.sln -c Release
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props', '**/packages.lock.json', '**/NuGet.config') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Restore (RID)
+        run: dotnet restore "${{ env.PROJECT_PATH }}" -r ${{ matrix.runtime }}
+
+      - name: Build (RID)
+        run: dotnet build "${{ env.PROJECT_PATH }}" -c ${{ env.CONFIGURATION }} -r ${{ matrix.runtime }} --no-restore
+
+      - name: Publish single-file (self-contained)
+        shell: pwsh
+        run: |
+          dotnet publish "${{ env.PROJECT_PATH }}" `
+            -c "${{ env.CONFIGURATION }}" `
+            -r "${{ matrix.runtime }}" `
+            /p:PublishSingleFile=true `
+            /p:IncludeNativeLibrariesForSelfExtract=true `
+            /p:SelfContained=true `
+            /p:PublishTrimmed=false `
+            /p:DebugType=None `
+            /p:DebugSymbols=false `
+            -o "out"
+
+      - name: Copy license files to output
+        shell: pwsh
+        run: |
+          # Kopiere LICENSE und THIRD-PARTY-LICENSES.md
+          Copy-Item -Path "LICENSE" -Destination "out\LICENSE" -Force
+          Copy-Item -Path "THIRD-PARTY-LICENSES.md" -Destination "out\THIRD-PARTY-LICENSES.md" -Force
+          
+          # Kopiere licenses Ordner rekursiv
+          if (Test-Path "licenses") {
+            Copy-Item -Path "licenses" -Destination "out\licenses" -Recurse -Force
+          }
+          
+          Write-Host "License files copied to output folder"
+
+      - name: Create zip
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $runtime = "${{ matrix.runtime }}"
+          $zip = "PictureExifclone-$tag-$runtime.zip"
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Compress-Archive -Path "out\*" -DestinationPath $zip
+          "ZIP_NAME=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Create/Update GitHub Release and upload asset
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            Automatisch erstelltes Release für Tag `${{ github.ref_name }}`.
+
+            **Build-Quelle:** Tag-Commit `${{ github.sha }}`
+            **Runtime:** `${{ matrix.runtime }}`
+            **Single-File:** SelfContained
+            
+            **Enthaltene Lizenzen:**
+            - LICENSE (MIT)
+            - THIRD-PARTY-LICENSES.md
+            - licenses/ Ordner mit allen Drittanbieter-Lizenzen
+          draft: false
+          prerelease: false
+          allowUpdates: true
+          artifacts: ${{ env.ZIP_NAME }}
+          replacesArtifacts: true
