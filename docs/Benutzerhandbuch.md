@@ -31,6 +31,21 @@ PictureGeoExif ergänzt Fotos um GPS-Koordinaten, bearbeitet Bilder und schlägt
 
 GPS lässt sich in JPEG, PNG und TIFF schreiben. **BMP kann keine GPS-Daten speichern** und wird mit einer Meldung abgelehnt. Bei JPEG bleibt die Bildqualität vollständig erhalten, denn es wird nur der Metadatenblock ersetzt.
 
+## macOS: Avalonia-Oberfläche und Apple Fotos
+
+Unter macOS (Apple Silicon) läuft PictureGeoExif als `PictureGeoExif.app` mit einer neuen Oberfläche. Aufbau: links **Quellen** (Dateien, Apple Fotos) und Aktionen, in der Mitte die **Bildliste**, rechts **Vorschau/Karte** und darunter die **Metadaten** (Allgemein, EXIF, GPS, XMP, IPTC, Raw). Die Befehle stehen auch in der macOS-Menüleiste (Datei, Bearbeiten, Apple Fotos, Werkzeuge, Help).
+
+- **Dateien:** „Bilder öffnen …“, „Ordner öffnen …“ oder Dateien/Ordner aus dem Finder auf das Fenster ziehen.
+- **Apple Fotos:** „Apple Fotos“ wählen → „Zugriff anfordern“ → im Systemdialog erlauben → „Fotomediathek öffnen“. Mediathek, Favoriten und Alben erscheinen links; Fotos werden seitenweise geladen („Weitere Fotos laden“).
+  - Ein Klick auf ein Foto lädt das Original (bei iCloud-Fotos mit Fortschrittsanzeige) und zeigt Vorschau und Metadaten. Schlägt das fehl, erscheint der Grund und „Erneut versuchen“.
+  - **Original exportieren …** speichert das unveränderte Original (z. B. HEIC, DNG) an einem frei wählbaren Ort.
+  - **In Dateien übernehmen** exportiert das Original in den Ausgabeordner (`Apple Fotos/…`) und fügt es der Dateiliste hinzu. Erst dann sind Bearbeiten, GPS schreiben und KI-Metadaten möglich – Apple Fotos selbst wird nie verändert.
+  - Abgelehnt? Unter Systemeinstellungen → Datenschutz & Sicherheit → Fotos lässt sich der Zugriff später erlauben. Dateien funktionieren unabhängig davon.
+- **Karte:** Klick setzt eine Koordinate, Klick auf einen Marker wählt das Bild, Ziehen verschiebt, Mausrad/„+“/„−“ zoomt, „Alle zeigen“ passt den Ausschnitt an.
+- **Help → Diagnostics:** technische Angaben für Support; „Diagnoseinformationen kopieren“ legt sie in die Zwischenablage.
+
+Weitere Hinweise: [MacOS-Troubleshooting.md](MacOS-Troubleshooting.md).
+
 ## Bildeditor
 
 Öffnen über ✏️ an einer Bildkachel.
@@ -56,7 +71,7 @@ Das Fenster schlägt **Jahreszeit, Titel und Stichwörter** vor und übernimmt v
 ### Einmalig einrichten
 
 1. **Anbieterprofil** wählen. Standard ist `openai-economy` (OpenAI `gpt-5-mini`); alternativ Azure oder Gemini.
-2. **API-Schlüssel** eingeben und „Speichern“ klicken. Er landet in der Windows-Anmeldeinformationsverwaltung. Azure meldet sich über Entra ID an; dafür ist kein Schlüssel nötig.
+2. **API-Schlüssel** eingeben und „Speichern“ klicken. Er landet in der Windows-Anmeldeinformationsverwaltung bzw. unter macOS im Schlüsselbund. Azure meldet sich über Entra ID an; dafür ist kein Schlüssel nötig.
 3. **Preise** (USD pro 1 Mio. Tokens: Eingabe, Cache, Ausgabe) von der Preisseite des Anbieters übernehmen und das **Prüfdatum** setzen. Ohne Preise startet keine kostenpflichtige Analyse.
 
 ### Ablauf

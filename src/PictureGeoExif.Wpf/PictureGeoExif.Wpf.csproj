@@ -43,9 +43,9 @@
   <ItemGroup>
     <Content Include="Resources\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="..\..\docs\examples\*.json" Link="Templates\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <None Include="..\..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\THIRD-PARTY-LICENSES.md" Link="THIRD-PARTY-LICENSES.md" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\licenses\**\*" LinkBase="licenses\" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\THIRD-PARTY-LICENSES.md" Link="THIRD-PARTY-LICENSES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\licenses\**\*" LinkBase="licenses\" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

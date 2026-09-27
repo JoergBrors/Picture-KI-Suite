@@ -2,6 +2,32 @@
 
 Alle nennenswerten Änderungen an PictureGeoExif. Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/). Versionen entsprechen den Git-Tags.
 
+## [0.98] – 2026-09-27
+
+### Hinzugefügt
+
+- **macOS auf Apple Silicon** (osx-arm64, Ziel macOS 27): neue **Avalonia-Oberfläche** (`src/PictureGeoExif.Avalonia`) als `PictureGeoExif.app`, unsigniert; Build mit `scripts/build-macos-arm64.sh`, Start mit `scripts/run-macos-local.sh`.
+- **Apple Fotos (PhotoKit):** Berechtigungs-Flow (nur auf Benutzeraktion), Mediathek, Favoriten, Alben, intelligente Alben, paginierte Fotoliste mit Thumbnails, Details (Datum, Typ, Maße, Favorit, Standort, Asset-Kennung), Original lesen/exportieren inkl. iCloud-Download mit Fortschritt und Abbruch; read-only.
+- **Metadaten-Tabs** Allgemein, EXIF, GPS, XMP (eingebettet + Sidecar), IPTC, Raw – für Dateien und Fotos-Originale mit derselben Analyse (`MetadataInspector`).
+- **HEIC/HEIF, AVIF, DNG, RAW:** Erkennung per Dateisignatur, Metadaten überall, Vorschau unter macOS über ImageIO.
+- **Plattformneutrale Karte** (OSM-Kacheln, ohne WebView2) hinter `IMapViewService`.
+- **Help → Diagnostics** mit „Diagnoseinformationen kopieren“, Logdatei, `PictureGeoExif --self-test`.
+- **Datenschutzprüfung** (`PrivacyGuard`) vor jeder KI-Anfrage: keine Pfade, keine Fotos-Kennungen, keine exakten GPS-Daten.
+- macOS-Schlüsselbund für API-Schlüssel.
+- CI-Jobs für macOS arm64 (Artifact `PictureGeoExif-macOS-arm64`) und Linux; Release hängt das macOS-ZIP an.
+
+### Geändert
+
+- **Neue Solution-Struktur:** `PictureGeoExif.Core` (ohne Paketabhängigkeiten), `.Metadata`, `.Application`, `.Platform.Mac`, `.Platform.Windows`, `.Avalonia`; die WPF-App liegt unter `src/PictureGeoExif.Wpf` und nutzt dieselben Bibliotheken. Zentrale Paketversionen (`Directory.Packages.props`), Version in `Directory.Build.props`.
+- `ImageService` liefert Thumbnails als JPEG-Bytes (ohne WPF-Typen) über austauschbare Decoder; Vorschauen enthalten keine EXIF/XMP/IPTC-Profile mehr.
+- Editor-Werkzeuglogik und KI-Ablauf aus dem Code-behind in Application-Services verschoben (`EditorOperations`, `AiMetadataWorkflow`).
+- Stempelschrift mit Fallback (Segoe UI, Arial, Helvetica Neue, Helvetica, DejaVu Sans).
+- Tests auf mehrere Projekte verteilt; plattformneutrale Tests laufen auch unter macOS und Linux.
+
+### Entfernt
+
+- Ungenutzte Legacy-Klassen `OptimizedImageService`, `ImageProcessingService`, `UndoService`, `CoordinateMapper`, `ImageDocument`, `ToolContext`, `ToolMode`.
+
 ## [0.97] – 2026-09-27
 
 ### Hinzugefügt

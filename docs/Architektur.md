@@ -1,5 +1,7 @@
 # Architektur
 
+> Dieses Dokument beschreibt die Datenflüsse und Integritätsregeln sowie die **WPF-Anwendung** (`src/PictureGeoExif.Wpf`). Die neue Schichtung mit Avalonia, plattformneutralem Core und macOS-PhotoKit-Adapter steht in [Avalonia-Architektur.md](Avalonia-Architektur.md). Klassennamen wie `ImageService`, `AtomicFile`, `EditorSession`, `AiMetadataService` gelten unverändert; sie liegen jetzt in `src/PictureGeoExif.Core`, `…Metadata` und `…Application`.
+
 PictureGeoExif ist eine WPF-Desktopanwendung (.NET 10, Windows 10 1809+). Die Fenster enthalten die Bedienlogik (Code-behind). Fachlogik ohne UI liegt in `Services/` und ist dort testbar. Die Dateizuordnung steht im [Code-Wegweiser](Code-Wegweiser.md).
 
 ## Komponenten

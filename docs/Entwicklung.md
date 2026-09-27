@@ -2,90 +2,101 @@
 
 ## Voraussetzungen
 
-- Windows 10 1809 oder neuer
-- .NET SDK **10.0.401** (per `global.json` gepinnt, `rollForward: latestPatch`)
-- WebView2 Runtime (für die Karte)
-- Optional: Visual Studio 2022/2026 mit „.NET-Desktopentwicklung“, PowerShell 7 für das Lizenzskript
+- .NET SDK **10.0.x** (`global.json`: mindestens 10.0.100, `rollForward: latestFeature`)
+- **macOS (Apple Silicon):** keine Workloads, kein Xcode nötig (siehe [MacOS-Build.md](MacOS-Build.md))
+- **Windows 10 1809+:** für die WPF-Anwendung zusätzlich die WebView2 Runtime
+- **Linux:** Bibliotheken und Headless-UI-Tests laufen; die Avalonia-App startet unter X11
+- Optional: Visual Studio 2026 / Rider / VS Code mit C# Dev Kit, PowerShell 7 für das Lizenzskript
+
+Empfohlen: `export AVALONIA_TELEMETRY_OPTOUT=1` (Avalonia-Build-Telemetrie aus).
 
 ## Bauen, Starten, Testen
 
-```powershell
-dotnet build PictureExifclone.sln -c Debug          # 0 Warnungen Pflicht (TreatWarningsAsErrors)
-dotnet run --project PictureExifclone.csproj
-dotnet test PictureExifclone.sln -c Release          # xUnit, ca. 1–2 s
+```bash
+# plattformneutral (macOS, Linux, Windows)
+dotnet build PictureGeoExif.CrossPlatform.slnf
+dotnet test  PictureGeoExif.CrossPlatform.slnf
+dotnet run --project src/PictureGeoExif.Avalonia/PictureGeoExif.Avalonia.csproj
+dotnet run --project src/PictureGeoExif.Avalonia/PictureGeoExif.Avalonia.csproj -- --self-test
+
+# Windows (inkl. WPF)
+dotnet build PictureGeoExif.sln -c Debug          # 0 Warnungen Pflicht (TreatWarningsAsErrors)
+dotnet test  PictureGeoExif.sln -c Release
+dotnet run --project src/PictureGeoExif.Wpf/PictureGeoExif.Wpf.csproj
+
+# macOS-Bundle
+scripts/build-macos-arm64.sh
 ```
 
-Release wie in der CI (self-contained, Single-File):
+Windows-Release der WPF-App wie in der CI:
 
 ```powershell
-dotnet publish PictureExifclone.csproj -c Release -r win-x64 `
+dotnet publish src/PictureGeoExif.Wpf/PictureGeoExif.Wpf.csproj -c Release -r win-x64 `
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:SelfContained=true -o out
 ```
 
-`Resources/` (Karte) und `Templates/` (KI-Vorlage aus `docs/examples`) liegen danach **neben** der EXE und müssen mit verteilt werden. Das Release-ZIP enthält sie.
+`Resources/` (Leaflet-Karte der WPF-App), `Templates/` (KI-Vorlage aus `docs/examples`) und `licenses/` liegen danach neben der EXE; im macOS-Bundle unter `Contents/Resources`.
 
 ## Tests
 
-Projekt: `tests/PictureGeoExif.Tests` (referenziert die App direkt).
-
-| Datei | Prüft |
+| Projekt | Prüft |
 | --- | --- |
-| `MetadataTests.cs` | GPS-Schreiben: JPEG-Scan-Daten bytegleich, Idempotenz, ungültige Werte ändern nichts, PNG-Alpha, BMP-Ablehnung, kollisionsfreie Exporte; Sidecar-Merge, Revisionsschutz, Ziel-Allowlist; Vorschau ohne Metadaten; XMP-GPS-Format |
-| `LogicTests.cs` | Auswahlgeometrie (Ränder, Richtungen, 1 px, leer/ungültig), Fit unter 10 %, Blur nur in der Auswahl, Verpixeln mit zu großem Block, Stempel-Anker; Vorlagen- und Antwortvalidierung, Schreibregeln, Schema-Übersetzung, Kostenformel |
-| `WindowTests.cs` | `AiMetadataWindow` und `ImageEditorWindow` lassen sich auf einem STA-Thread erzeugen (XAML und Handler gültig) |
+| `tests/PictureGeoExif.Core.Tests` | Formaterkennung (Signaturen, HEIC-Brands, UTIs, Endungen), `AtomicFile`, `GeoCoordinate`, `ImageSourceItem`, Exportergebnisse, virtuelle Trassen (`RouteTests`), Map-Matching mit Fake-Server (`RoadMatcherTests`) |
+| `tests/PictureGeoExif.Metadata.Tests` | GPS-Schreiben (JPEG bytegleiche Scan-Daten, Idempotenz, ungültige Werte, PNG-Alpha, BMP/HEIC-Ablehnung, kollisionsfreie Exporte), Sidecar-Merge, Revisionsschutz, Ziel-Allowlist, Vorschau ohne Metadaten, XMP-GPS-Format, Auswahlgeometrie, Blur/Pixelate/Stamp, Vorlagen-/Antwortvalidierung, `MetadataInspector`, Decoder-Fallback |
+| `tests/PictureGeoExif.Application.Tests` | Quellen, Fotos-Pipeline (Fake-Mediathek → Cache → Metadaten), `PrivacyGuard`, `EditorOperations`, `MapProjection`/`RouteLayers`, `AppPaths`, `AiMetadataWorkflow` (Preise, Budget, Bestätigung, Apply/Undo, Chat), Diagnose |
+| `tests/PictureGeoExif.Platform.Tests` | PhotoKit-Mapping (Status, Typen, Ressourcen, Alben, Fehler), `MacPhotoLibraryService` mit `FakePhotoKitFacade` (Berechtigung, Paging, Export, Abbruch, iCloud-Fehler, kein Überschreiben), Bundle-Erkennung; auf macOS zusätzlich echtes Photos.framework/ImageIO |
+| `tests/PictureGeoExif.Avalonia.Tests` | Headless (Avalonia.Headless + xUnit v3): alle Fenster laden, Dateien laden, GPS-Kopie + Undo, Editor, Diagnose |
+| `tests/PictureGeoExif.Wpf.Tests` | nur Windows: WPF-Fenster auf STA-Thread, `ImageItem`-Undo |
 
 Regeln:
 
-- **Tests dürfen keine Benutzerdaten anfassen.** Für `AppSettings` in Tests immer `new AppSettings { FilePath = <temp> }` verwenden. Das Standard-`Save()` schreibt nach `%APPDATA%`.
+- **Tests dürfen keine Benutzerdaten anfassen.** `AppSettings` in Tests immer mit `FilePath = <temp>`, `AppPaths` auf Temp-Ordner setzen. Schlüsselbund-/Credential-Manager-Tests laufen nur mit `PGE_TEST_KEYCHAIN=1` bzw. `PGE_TEST_CREDENTIALS=1`.
 - Testbilder synthetisch erzeugen (ImageSharp); keine echten Fotos einchecken.
-- Keine echten Netzaufrufe in Tests. `RoadMatcherTests` nutzen einen Fake-`HttpMessageHandler`; die Drosselung lässt sich per `minInterval: TimeSpan.Zero` abschalten. Der öffentliche FOSSGIS-Server darf nicht aus CI angesprochen werden.
-- Keine echten KI-Aufrufe in Tests. Anbieterlogik wird offline über Schema, Parsing und Validierung geprüft.
+- Keine echten Netzaufrufe (Map-Matching mit Fake-`HttpMessageHandler`, keine KI-Aufrufe). Der FOSSGIS-Server darf nicht aus CI angesprochen werden.
+- PhotoKit nie direkt testen: `IPhotoKitFacade` durch `FakePhotoKitFacade` ersetzen. Die Tests in `MacIntegrationTests` laden nur das Framework und lesen den Status – sie fordern nie eine Berechtigung an.
 
 ## Konventionen
 
-- **Encoding:** Alle Text-Quelldateien sind UTF-8. Keine Windows-1252-Dateien einchecken, sonst erscheinen Umlaute als „�“.
-- **Warnungen:** `TreatWarningsAsErrors` ist aktiv. Ursachen beheben, kein `#pragma`, `NoWarn` oder `!` zur Symptomunterdrückung.
-- **Dateischreiben:** immer über `AtomicFile.Write`, neue Exportnamen über `AtomicFile.ExportPath`. Originale nie überschreiben.
-- **Koordinaten an JavaScript:** mit `InvariantCulture` formatieren (`MainWindow.Js`), Texte per `JsonSerializer.Serialize`.
-- **Langlaufende Arbeit:** `Task.Run` plus `CancellationToken`; UI-Zustand erst nach Erfolg ändern.
-- **Sprache:** Oberflächentexte Deutsch, Code-Kommentare Englisch oder Deutsch; den Stil der Umgebung übernehmen.
-- **KI:** Neue Vorlagenfelder oder Zieltags nur mit Validierung in `AiTemplate.Validate` bzw. Eintrag in `AiMetadataService.Targets` und Tests.
+- **Schichten:** Core ohne Paketabhängigkeit; UI verwendet nie PhotoKit direkt; Plattformadapter nur in `Bootstrap` wählen. Namespace der Avalonia-App: `PictureGeoExif.Desktop`; die Avalonia-Klasse `Application` dort als `global::Avalonia.Application` schreiben.
+- **Encoding:** Alle Textdateien UTF-8.
+- **Warnungen:** `TreatWarningsAsErrors` für alle Projekte. Ursachen beheben statt unterdrücken.
+- **Dateischreiben:** immer über `AtomicFile`; Originale nie überschreiben; Exporte kollisionsfrei.
+- **Langlaufende Arbeit:** `Task.Run` plus `CancellationToken`; ViewModels setzen Zustand erst nach Erfolg; keine `ConfigureAwait(false)` in ViewModels (Fortsetzung auf dem UI-Thread).
+- **Objective-C-Interop:** nur in `Platform.Mac/Interop` und `ObjCPhotoKitFacade`; Autorelease-Pool je Aufruf; keine Exceptions über Block-Grenzen; nur Rohwerte über die Fassade, Interpretation in `PhotoKitMapping`.
+- **Logging:** keine Dateinamen, Pfade von Bildern, Koordinaten, PhotoKit-Kennungen oder Schlüssel.
+- **Sprache:** Oberflächentexte Deutsch, Code-Kommentare Englisch oder Deutsch.
+- **Pakete:** Versionen nur in `Directory.Packages.props`.
 
 ## CI/CD
 
-| Workflow | Auslöser | Schritte |
+| Workflow | Auslöser | Jobs |
 | --- | --- | --- |
-| `.github/workflows/build.yml` | Pull Request, Push auf `main` | Build Debug, Tests Release, Paketaudit (bricht bei anfälligen Paketen ab) |
-| `.github/workflows/release-on-tag.yml` | Tag-Push | Checkout **des Tag-Commits**, Tests, Single-File-Publish `win-x64` und `win-arm64`, ZIP inklusive Lizenzen, GitHub Release |
+| `.github/workflows/build.yml` | Pull Request, Push auf `main`, manuell | **Windows:** Build (inkl. WPF), Tests, Paketaudit, Publish WPF + Avalonia win-x64, Artifact · **macOS arm64:** `scripts/build-macos-arm64.sh` (Restore, Test, Build, Publish, `.app`, ZIP), Prüfung (`plutil`, `lipo`, `--self-test`), Artifact `PictureGeoExif-macOS-arm64` · **Linux:** Tests |
+| `.github/workflows/release-on-tag.yml` | Tag-Push | WPF single-file `win-x64`/`win-arm64` + macOS-arm64-ZIP als Release-Assets |
 
-Ein Release entsteht durch Tag und Push:
-
-```powershell
-git tag v0.96; git push origin v0.96   # Version vorher im csproj (<Version>) anheben
-```
-
-Der ARM64-Build wird in der CI nur kompiliert. Ob er zur Laufzeit funktioniert, muss auf ARM64-Hardware geprüft werden.
+Release: Version in `Directory.Build.props` anheben, dann `git tag v0.98 && git push origin v0.98`.
 
 ## Abhängigkeiten und Lizenzen
 
-- Paketänderungen im `PictureExifclone.csproj` vornehmen, dann:
+- Paketänderungen in `Directory.Packages.props`, danach:
 
-  ```powershell
-  dotnet list PictureExifclone.csproj package --vulnerable --include-transitive
+  ```bash
+  dotnet list PictureGeoExif.sln package --vulnerable --include-transitive
   pwsh scripts/Update-ThirdPartyLicenses.ps1
   ```
 
-- Anschließend [THIRD-PARTY-LICENSES.md](../THIRD-PARTY-LICENSES.md) prüfen und ergänzen.
-- **SixLabors-Pakete nicht ohne Lizenzprüfung auf eine neue Hauptversion heben** (Split License, siehe THIRD-PARTY-LICENSES, Abschnitt 3.1).
-- `docs/examples/*.json` werden als `Templates\` ins Ausgabeverzeichnis kopiert; Änderungen dort betreffen die Standardvorlage der App.
+- [THIRD-PARTY-LICENSES.md](../THIRD-PARTY-LICENSES.md) prüfen und ergänzen.
+- **SixLabors-Pakete nicht ohne Lizenzprüfung auf eine neue Hauptversion heben** (Split License).
+- `docs/examples/*.json` werden als `Templates/` ausgeliefert.
 
 ## Fehlersuche
 
 | Symptom | Ursache / Prüfung |
 | --- | --- |
-| Karte leer, Meldung „WebView2 Runtime prüfen“ | Runtime fehlt oder Profilordner `%LOCALAPPDATA%\PictureGeoExif\WebView2` nicht beschreibbar |
-| „Kartenserver: HTTP 403/429“ | OSM blockiert oder drosselt; Tile-Anbieter in `settings.json` wechseln (siehe Betrieb) |
+| WPF-Karte leer, „WebView2 Runtime prüfen“ | Runtime fehlt oder Profilordner nicht beschreibbar |
+| Avalonia-Karte grau | offline oder Kachelserver 403/429; Statuszeile unter der Karte |
+| „Kartenserver: HTTP 403/429“ | Kachelanbieter in `settings.json` wechseln |
 | KI: „Start blockiert: Preise fehlen“ | Preise und Prüfdatum im KI-Fenster eintragen |
-| KI: „Kein API-Schlüssel“ | Schlüssel im Fenster speichern oder `OPENAI_API_KEY` / `GEMINI_API_KEY` / `AZURE_OPENAI_API_KEY` setzen |
-| KI Azure: Umgebungsvariable fehlt | `PICTUREGEO_AZURE_OPENAI_ENDPOINT` und `PICTUREGEO_AZURE_GPT5_MINI_DEPLOYMENT` setzen (Namen aus der Vorlage) |
-| „Unklar ob verarbeitet“ | Timeout oder Verbindungsabbruch nach dem Senden; bewusst ohne automatische Wiederholung, im Anbieterportal prüfen |
+| KI: „Kein API-Schlüssel“ | im Fenster speichern oder `OPENAI_API_KEY` / `GEMINI_API_KEY` / `AZURE_OPENAI_API_KEY` setzen |
+| KI: „Anfrage enthält … und wurde nicht gesendet“ | `PrivacyGuard` hat Pfad, Fotos-Kennung oder exakte Koordinate erkannt |
+| macOS-spezifisch | [MacOS-Troubleshooting.md](MacOS-Troubleshooting.md) |

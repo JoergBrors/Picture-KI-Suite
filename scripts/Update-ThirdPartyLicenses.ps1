@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Rebuilds licenses/ from the packages that are actually shipped with PictureExifclone.
+  Rebuilds licenses/ from the packages that are actually shipped with PictureGeoExif.
 
 .DESCRIPTION
   Reads obj/project.assets.json (runtime dependencies incl. transitive ones) and copies the
@@ -15,19 +15,24 @@
   Afterwards update THIRD-PARTY-LICENSES.md if the summary lists new packages or licenses.
 
 .EXAMPLE
-  pwsh scripts/Update-ThirdPartyLicenses.ps1
+  pwsh scripts/Update-ThirdPartyLicenses.ps1                                   # WPF, win-x64
+.EXAMPLE
+  pwsh scripts/Update-ThirdPartyLicenses.ps1 -Project src/PictureGeoExif.Avalonia/PictureGeoExif.Avalonia.csproj -Runtime osx-arm64 -Summary dependency-licenses-summary.macos-arm64.json
 #>
-param([string]$Runtime = 'win-x64')
+param(
+    [string]$Runtime = 'win-x64',
+    [string]$Project = 'src/PictureGeoExif.Wpf/PictureGeoExif.Wpf.csproj',
+    [string]$Summary = 'dependency-licenses-summary.json')
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path $PSScriptRoot -Parent
 $licenses = Join-Path $root 'licenses'
-$project = Join-Path $root 'PictureExifclone.csproj'
+$project = Join-Path $root $Project
 
 dotnet restore $project -r $Runtime | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'dotnet restore failed' }
 
-$assets = Get-Content (Join-Path $root 'obj/project.assets.json') -Raw | ConvertFrom-Json
+$assets = Get-Content (Join-Path (Split-Path $project -Parent) 'obj/project.assets.json') -Raw | ConvertFrom-Json
 $cache = $assets.project.restore.packagesPath
 $targetName = $assets.targets.PSObject.Properties.Name | Where-Object { $_ -like "*/$Runtime" } | Select-Object -First 1
 if (-not $targetName) { throw "No restore target for runtime $Runtime" }
@@ -90,7 +95,9 @@ foreach ($name in $shipped | Sort-Object) {
 
 # Self-contained publish ships the runtime packs; use the newest pack of the target major version in the cache.
 $major = ($assets.project.frameworks.PSObject.Properties.Name | Select-Object -First 1) -replace '^net(\d+).*', '$1'
-foreach ($pack in "Microsoft.NETCore.App.Runtime.$Runtime", "Microsoft.WindowsDesktop.App.Runtime.$Runtime") {
+$packs = @("Microsoft.NETCore.App.Runtime.$Runtime")
+if ($Runtime -like 'win-*' -and $Project -like '*Wpf*') { $packs += "Microsoft.WindowsDesktop.App.Runtime.$Runtime" }
+foreach ($pack in $packs) {
     $dir = Join-Path $cache $pack.ToLowerInvariant()
     $version = Get-ChildItem $dir -Directory -ErrorAction SilentlyContinue | Where-Object Name -like "$major.*" |
         Sort-Object { [version]$_.Name } | Select-Object -Last 1
@@ -98,6 +105,6 @@ foreach ($pack in "Microsoft.NETCore.App.Runtime.$Runtime", "Microsoft.WindowsDe
     $summary += Export-Package $pack $version.Name $version.FullName 'Runtime (self-contained)'
 }
 
-$summary | ConvertTo-Json -Depth 4 | Set-Content (Join-Path $licenses 'dependency-licenses-summary.json') -Encoding utf8
+$summary | ConvertTo-Json -Depth 4 | Set-Content (Join-Path $licenses $Summary) -Encoding utf8
 $summary | Format-Table Id, Version, License -AutoSize
 Write-Host "Updated $($summary.Count) entries. Check THIRD-PARTY-LICENSES.md for new packages or license changes."

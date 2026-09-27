@@ -1,6 +1,6 @@
-# Services
+# Bibliotheken (früher `Services/`)
 
-Fachlogik ohne UI-Abhängigkeit (außer `BitmapImage` in `ImageService`). Die Klassen sind über `tests/PictureGeoExif.Tests` abgedeckt. Die Einordnung ins Gesamtsystem beschreibt [docs/Architektur.md](../docs/Architektur.md).
+Fachlogik ohne UI-Abhängigkeit, verteilt auf `src/PictureGeoExif.Core` (`AtomicFile`, `AppInfo`, `RouteBuilder`, `RoadMatcher`, Formaterkennung, Domänenmodelle), `src/PictureGeoExif.Metadata` (`ImageService`, `JpegExifWriter`, `MetadataInspector`, `PixelGeometry`, `EditorSession`, `AiMetadataService`, `AiModels`), `src/PictureGeoExif.Application` (`AiProviders`, `AiMetadataWorkflow`, `AppSettings`, Quellen, Fotos-Pipeline, `PrivacyGuard`) und die Plattformprojekte (`WindowsCredentialStore`, `MacKeychainCredentialStore`, PhotoKit). Abgedeckt durch die Testprojekte unter `tests/`. Einordnung: [Avalonia-Architektur.md](Avalonia-Architektur.md), Datenflüsse: [Architektur.md](Architektur.md).
 
 ## Aktive Klassen
 
@@ -8,9 +8,10 @@ Fachlogik ohne UI-Abhängigkeit (außer `BitmapImage` in `ImageService`). Die Kl
 
 | Methode | Verhalten |
 | --- | --- |
-| `Task<BitmapImage?> CreateThumbnailAsync(path, maxWidth = 200)` / `CreateThumbnail(...)` | Thumbnail im Temp-Ordner, Cache über `WeakReference`, Sperre pro Datei |
+| `Task<byte[]?> CreateThumbnailAsync(path, maxEdge = 200)` / `CreateThumbnail(...)` | Ausgerichtetes JPEG ohne Metadaten über den eingestellten `IImageDecoder` (ImageSharp, unter macOS zusätzlich ImageIO für HEIC/RAW); begrenzter Cache nach Pfad, Größe und Änderungszeit; WPF/Avalonia erzeugen daraus ihre Bitmaps |
+| `static GeoCoordinate? ReadGps(path)` | GPS aus EXIF (alle von MetadataExtractor unterstützten Formate) |
 | `void InvalidateThumbnailCache(path)`, `ClearThumbnailCache()` | Cache leeren, z. B. nach einem neuen Pfad |
-| `void WriteGpsToImage(path, lat, lon)` | JPEG: nur das EXIF-APP1-Segment wird ersetzt (`JpegExifWriter`). PNG/TIFF: verlustfreie Neukodierung. Andere Formate: `InvalidOperationException`. Vor dem Ersetzen wird mit MetadataExtractor nachgelesen, dann atomar geschrieben. Ungültige Koordinaten: `ArgumentOutOfRangeException`, die Datei bleibt unverändert. |
+| `void WriteGpsToImage(path, lat, lon)` | JPEG: nur das EXIF-APP1-Segment wird ersetzt (`JpegExifWriter`). PNG/TIFF: verlustfreie Neukodierung. Andere Formate (BMP, HEIC, DNG, RAW …, erkannt per Signatur): `InvalidOperationException`. Vor dem Ersetzen wird mit MetadataExtractor nachgelesen, dann atomar geschrieben. Ungültige Koordinaten: `ArgumentOutOfRangeException`, die Datei bleibt unverändert. |
 | `string SaveSingleImage(source, outputFolder, lat?, lon?)` | Kollisionsfreie Kopie im Ausgabeordner, optional mit GPS. Bei einem Fehler wird die Kopie entfernt; das Original bleibt immer unverändert. |
 | `string SaveEditedImage(bytes, fileName, outputFolder)` | Speichert Editor-Exporte kollisionsfrei (`overwrite: false`). |
 
@@ -74,10 +75,14 @@ Statische Werkzeuge:
 - Wiederholt wird nur bei 429 und 5xx. Bei Timeout oder Abbruch nach dem Senden wirft der Adapter `AiProviderException` mit `Ambiguous = true`.
 - `Usage` enthält die bereits verbrauchten Tokens, damit die Kosten auch im Fehlerfall gezählt werden.
 
-### `CredentialStore`
+### `ICredentialStore`
 
-`Read`, `Write` und `Delete` für generische Einträge im Windows Credential Manager (aktueller Benutzer). Verwendet für API-Schlüssel.
+`Read`, `Write` und `Delete` für API-Schlüssel: `WindowsCredentialStore` (Windows Credential Manager, aktueller Benutzer), `MacKeychainCredentialStore` (Anmeldeschlüsselbund, Dienst „PictureGeoExif“), sonst `NoCredentialStore` (nur Umgebungsvariablen). `AiProviderFactory.Create(profile, maxAttempts, credentials)` erhält den Store per Parameter.
 
-## Legacy (nicht verwendet)
+### `MetadataInspector`
 
-`OptimizedImageService`, `ImageProcessingService`, `UndoService` und `CoordinateMapper` stammen aus früheren Ständen und werden vom aktiven Code nicht aufgerufen. `OptimizedImageService` schreibt GPS noch per Neukodierung mit `.bak`-Datei. **Nicht verwenden oder erweitern**; sie sind Kandidaten zum Entfernen.
+`Inspect(path)` liefert einen `MetadataReport` mit Format, Größe, Maßen, Aufnahmezeit, GPS, Kamera und allen Einträgen gruppiert nach Allgemein, EXIF, GPS, XMP (eingebettet und Sidecar), IPTC und Raw. Wird für Dateien und Apple-Fotos-Originale gleichermaßen verwendet.
+
+## Entfernt
+
+`OptimizedImageService`, `ImageProcessingService`, `UndoService`, `CoordinateMapper` sowie die Modelle `ImageDocument`, `ToolContext` und `ToolMode` wurden in 0.98 entfernt; sie waren ungenutzt und WPF-abhängig.

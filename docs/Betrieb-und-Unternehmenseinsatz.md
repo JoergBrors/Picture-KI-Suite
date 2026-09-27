@@ -16,6 +16,9 @@ Leitfaden für IT, Datenschutz und Verantwortliche, die PictureGeoExif in einer 
 
 ## 2. Installation und Verteilung
 
+> **macOS (Apple Silicon):** `PictureGeoExif-macOS-arm64.zip` entpacken und `PictureGeoExif.app` nach `/Applications` kopieren. Phase 1 ist nicht signiert/notarisiert – Gatekeeper-Hinweise und Freigabe siehe [MacOS-Deployment.md](MacOS-Deployment.md). Speicherorte: `~/Library/Application Support/PictureGeoExif` (Einstellungen), `~/Library/Caches/PictureGeoExif` (Fotos-Originale, Kartenkacheln), `~/Library/Logs/PictureGeoExif`. Der Zugriff auf Apple Fotos ist lesend und wird pro Benutzer über die macOS-Datenschutzeinstellungen gesteuert (per MDM über PPPC-Profile verwaltbar).
+
+
 1. Das Release-ZIP (`PictureExifclone-<tag>-win-x64.zip` bzw. `-win-arm64.zip`) von GitHub Releases laden und die Prüfsumme bzw. Quelle nach Unternehmensrichtlinie prüfen.
 2. In einen Programmordner entpacken, z. B. `C:\Program Files\PictureGeoExif\` (per Softwareverteilung) oder benutzerbezogen.
 3. **Nicht trennen:** `PictureExifclone.exe`, `Resources\`, `Templates\`, `licenses\`, `LICENSE`, `THIRD-PARTY-LICENSES.md`.
