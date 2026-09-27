@@ -1,0 +1,18 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PictureGeoExif.Desktop.ViewModels"
+        x:Class="PictureGeoExif.Desktop.Views.LicenseWindow"
+        x:DataType="vm:LicenseViewModel"
+        Title="Lizenzen" Width="820" Height="640" WindowStartupLocation="CenterOwner">
+  <DockPanel Margin="12">
+    <TextBlock DockPanel.Dock="Bottom" Text="{Binding LicensesInfo}" Classes="hint" Margin="0,8,0,0" />
+    <TabControl>
+      <TabItem Header="PictureGeoExif (MIT)">
+        <TextBox Text="{Binding License}" IsReadOnly="True" TextWrapping="Wrap" FontFamily="{DynamicResource ContentControlThemeFontFamily}" />
+      </TabItem>
+      <TabItem Header="Drittanbieter">
+        <TextBox Text="{Binding ThirdParty}" IsReadOnly="True" TextWrapping="Wrap" />
+      </TabItem>
+    </TabControl>
+  </DockPanel>
+</Window>

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Use cases shared by all UIs: sources, Photos pipeline, AI workflow, settings, diagnostics, editor operations. -->
+  <PropertyGroup>
+    <RootNamespace>PictureGeoExif.Application</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PictureGeoExif.Core\PictureGeoExif.Core.csproj" />
+    <ProjectReference Include="..\PictureGeoExif.Metadata\PictureGeoExif.Metadata.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="PictureGeoExif.Application.Tests" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,17 @@
+<Project>
+  <!-- Shared settings for all projects. Version lives here so tags, UI, Info.plist and HTTP user agents never drift apart. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <LangVersion>latest</LangVersion>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Company>Jörg Brors</Company>
+    <Product>PictureGeoExif</Product>
+    <Copyright>Copyright © 2026 Jörg Brors</Copyright>
+    <Version>0.98.0</Version>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+</Project>

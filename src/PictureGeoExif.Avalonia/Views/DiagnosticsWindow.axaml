@@ -1,0 +1,25 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PictureGeoExif.Desktop.ViewModels"
+        xmlns:diag="using:PictureGeoExif.Application.Diagnostics"
+        x:Class="PictureGeoExif.Desktop.Views.DiagnosticsWindow"
+        x:DataType="vm:DiagnosticsViewModel"
+        Title="Diagnostics" Width="780" Height="600" WindowStartupLocation="CenterOwner">
+  <DockPanel Margin="12">
+    <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,10,0,0">
+      <WrapPanel Classes="buttons">
+        <Button Content="Diagnoseinformationen kopieren" Command="{Binding CopyCommand}" Classes="accent" />
+        <Button Content="Log-Ordner öffnen" Command="{Binding OpenLogFolderCommand}" />
+        <Button Content="Cache Apple-Fotos-Originale leeren" Command="{Binding ClearPhotosCacheCommand}" />
+      </WrapPanel>
+      <TextBlock Text="{Binding Status}" Classes="hint" />
+      <TextBlock Classes="hint" Text="Enthält keine Bildnamen, GPS-Daten oder Fotos-Kennungen." />
+    </StackPanel>
+    <DataGrid ItemsSource="{Binding Items}" IsReadOnly="True" AutoGenerateColumns="False" GridLinesVisibility="Horizontal">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Eigenschaft" Binding="{Binding Name}" x:DataType="diag:DiagnosticsItem" Width="240" />
+        <DataGridTextColumn Header="Wert" Binding="{Binding Value}" x:DataType="diag:DiagnosticsItem" Width="*" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</Window>

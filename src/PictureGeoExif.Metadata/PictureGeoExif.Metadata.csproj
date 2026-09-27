@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- EXIF/GPS/XMP/IPTC reading and writing, thumbnails, decoders and the pixel editor engine. UI-free. -->
+  <PropertyGroup>
+    <RootNamespace>PictureGeoExif.Metadata</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MetadataExtractor" />
+    <PackageReference Include="XmpCore" />
+    <PackageReference Include="SixLabors.ImageSharp" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" />
+    <PackageReference Include="SixLabors.Fonts" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PictureGeoExif.Core\PictureGeoExif.Core.csproj" />
+  </ItemGroup>
+</Project>

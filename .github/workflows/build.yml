@@ -1,0 +1,130 @@
+name: Build & Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: 1
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  AVALONIA_TELEMETRY_OPTOUT: 1
+
+jobs:
+  windows:
+    name: Windows (build, test, package)
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # TreatWarningsAsErrors is set for all projects, so any new warning fails the build.
+      - name: Build Debug (incl. legacy WPF)
+        run: dotnet build PictureGeoExif.sln -c Debug
+
+      - name: Test Release (incl. WPF window tests)
+        env:
+          PGE_TEST_CREDENTIALS: '1'
+        run: dotnet test PictureGeoExif.sln -c Release
+
+      - name: Package audit
+        shell: pwsh
+        run: |
+          $out = dotnet list PictureGeoExif.sln package --vulnerable --include-transitive
+          $out
+          if ($out -match '>\s') { throw 'Vulnerable packages found' }
+
+      - name: Publish Avalonia win-x64 (self-contained)
+        run: dotnet publish src/PictureGeoExif.Avalonia/PictureGeoExif.Avalonia.csproj -c Release -r win-x64 --self-contained true -p:DebugType=None -o out/avalonia-win-x64
+
+      - name: Publish WPF win-x64 (self-contained)
+        run: dotnet publish src/PictureGeoExif.Wpf/PictureGeoExif.Wpf.csproj -c Release -r win-x64 --self-contained true -p:DebugType=None -o out/wpf-win-x64
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: PictureGeoExif-windows-x64
+          path: out/
+          retention-days: 14
+
+  macos:
+    name: macOS arm64 (restore, build, test, publish, .app, .pkg)
+    # Apple Silicon runner; osx-arm64 is the runtime identifier for all M-series Macs (M1 … M4).
+    runs-on: macos-15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Show environment
+        run: |
+          sw_vers
+          uname -m
+          dotnet --info | head -n 30
+
+      # The package is built and uploaded first, so the .app artifact exists even if a later check fails.
+      # No Developer ID signing and no notarization in this phase.
+      - name: Build PictureGeoExif.app (restore, Release build, publish osx-arm64, bundle, zip)
+        run: scripts/build-macos-arm64.sh --skip-tests --build-number "${{ github.run_number }}"
+
+      - name: Upload .app (zip)
+        uses: actions/upload-artifact@v4
+        with:
+          name: PictureGeoExif-macOS-arm64
+          path: artifacts/macos-arm64/PictureGeoExif-macOS-arm64.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload installer (pkg)
+        uses: actions/upload-artifact@v4
+        with:
+          name: PictureGeoExif-macOS-arm64-pkg
+          path: artifacts/macos-arm64/PictureGeoExif-macOS-arm64.pkg
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Verify bundle
+        run: |
+          APP=artifacts/macos-arm64/PictureGeoExif.app
+          plutil -lint "$APP/Contents/Info.plist"
+          file "$APP/Contents/MacOS/PictureGeoExif"
+          lipo -archs "$APP/Contents/MacOS/PictureGeoExif" | grep -q arm64
+          codesign --verify --deep --strict --verbose=2 "$APP"   # ad-hoc sealed bundle (no Developer ID)
+          # Starts the bundled executable without UI: loads native libraries, Photos.framework and ImageIO.
+          "$APP/Contents/MacOS/PictureGeoExif" --self-test
+
+      - name: Install pkg and self-test the installed app
+        run: |
+          sudo installer -pkg artifacts/macos-arm64/PictureGeoExif-macOS-arm64.pkg -target /
+          pkgutil --pkg-info net.brors.picturegeoexif
+          /Applications/PictureGeoExif.app/Contents/MacOS/PictureGeoExif --self-test
+
+      # Unit, platform (incl. real PhotoKit/ImageIO interop) and headless UI tests.
+      - name: Test
+        if: always()
+        run: dotnet test PictureGeoExif.CrossPlatform.slnf -c Release
+
+  linux:
+    name: Linux (cross-platform libraries and headless UI tests)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Test
+        run: dotnet test PictureGeoExif.CrossPlatform.slnf -c Release

@@ -1,0 +1,70 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PictureGeoExif.Desktop.ViewModels"
+        x:Class="PictureGeoExif.Desktop.Views.ImageEditorWindow"
+        x:DataType="vm:ImageEditorViewModel"
+        Title="Bildeditor" Width="1280" Height="860" MinWidth="900" MinHeight="600" WindowStartupLocation="CenterOwner">
+  <DockPanel>
+    <WrapPanel DockPanel.Dock="Top" Classes="buttons" Margin="10,8,10,0">
+      <Button Content="−" Click="ZoomOut_Click" />
+      <TextBlock Text="{Binding Zoom, StringFormat='{}{0:P0}'}" VerticalAlignment="Center" Margin="4,0,10,6" MinWidth="50" />
+      <Button Content="+" Click="ZoomIn_Click" />
+      <Button Content="Einpassen" Click="Fit_Click" />
+      <Button Content="100 %" Click="Actual_Click" />
+      <Button Content="↶ Links" Command="{Binding RotateLeftCommand}" />
+      <Button Content="↷ Rechts" Command="{Binding RotateRightCommand}" />
+      <Button Content="Rückgängig" Command="{Binding UndoCommand}" IsEnabled="{Binding CanUndo}" />
+      <Button Content="Wiederholen" Command="{Binding RedoCommand}" IsEnabled="{Binding CanRedo}" />
+      <Button Content="Original / Bearbeitet" Command="{Binding CompareCommand}" />
+      <Button Content="Speichern" Click="Save_Click" Classes="accent" />
+      <Button Content="Abbrechen" Click="Cancel_Click" />
+    </WrapPanel>
+    <Border DockPanel.Dock="Bottom" Padding="10,4">
+      <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
+    </Border>
+    <ScrollViewer DockPanel.Dock="Left" Width="290" Padding="10,4">
+      <StackPanel Spacing="4">
+        <TextBlock Text="{Binding Info}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding GpsInfo}" Classes="hint" />
+        <TextBlock Classes="header" Text="Bereich" />
+        <RadioButton GroupName="tool" Content="Zuschneiden" IsChecked="{Binding IsCrop}" />
+        <RadioButton GroupName="tool" Content="Unschärfe (Blur)" IsChecked="{Binding IsBlur}" />
+        <RadioButton GroupName="tool" Content="Verpixeln" IsChecked="{Binding IsPixelate}" />
+        <TextBlock Text="{Binding EffectPercent, StringFormat='Stärke: {0:F1} % der Auswahl'}" />
+        <Slider Minimum="0.5" Maximum="30" Value="{Binding EffectPercent}" />
+        <TextBlock Classes="header" Text="Stempel" />
+        <RadioButton GroupName="tool" Content="Text" IsChecked="{Binding IsText}" />
+        <TextBox Text="{Binding Text}" Height="70" AcceptsReturn="True" TextWrapping="Wrap" />
+        <RadioButton GroupName="tool" Content="GPS-Stempel" IsChecked="{Binding IsGps}" />
+        <TextBlock Text="{Binding StampPercent, StringFormat='Schriftgröße: {0:F1} % der Bildkante'}" />
+        <Slider Minimum="0.5" Maximum="15" Value="{Binding StampPercent}" />
+        <ComboBox ItemsSource="{x:Static vm:ImageEditorViewModel.Colors}" SelectedItem="{Binding StampColor}" HorizontalAlignment="Stretch" />
+        <ComboBox ItemsSource="{x:Static vm:ImageEditorViewModel.Anchors}" SelectedIndex="{Binding AnchorIndex}" HorizontalAlignment="Stretch" />
+        <WrapPanel Classes="buttons" Margin="0,8,0,0">
+          <Button Content="Vorschau" Command="{Binding PreviewCommand}" />
+          <Button Content="Anwenden" Command="{Binding ApplyCommand}" Classes="accent" />
+          <Button Content="Auswahl löschen" Command="{Binding ClearCommand}" />
+        </WrapPanel>
+        <TextBlock Classes="header" Text="Export" />
+        <ComboBox ItemsSource="{x:Static vm:ImageEditorViewModel.Formats}" SelectedItem="{Binding ExportFormat}" HorizontalAlignment="Stretch" />
+        <TextBlock Text="{Binding JpegQuality, StringFormat='JPEG-Qualität: {0:F0}'}" />
+        <Slider Minimum="1" Maximum="100" Value="{Binding JpegQuality}" />
+        <Button Content="Vorgang abbrechen" Command="{Binding CancelOperationCommand}" IsVisible="{Binding IsBusy}" />
+      </StackPanel>
+    </ScrollViewer>
+    <ScrollViewer x:Name="Viewport" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="#FF2B2B2B">
+      <LayoutTransformControl x:Name="ZoomHost" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <LayoutTransformControl.LayoutTransform>
+          <ScaleTransform ScaleX="{Binding Zoom}" ScaleY="{Binding Zoom}" />
+        </LayoutTransformControl.LayoutTransform>
+        <!-- One local unit = one image pixel; the layout transform handles zoom, so pointer positions are image pixels. -->
+        <Canvas x:Name="Surface" Width="{Binding DisplayWidth}" Height="{Binding DisplayHeight}" Background="Transparent">
+          <Image Source="{Binding Display}" Width="{Binding DisplayWidth}" Height="{Binding DisplayHeight}" Stretch="Fill"
+                 RenderOptions.BitmapInterpolationMode="HighQuality" />
+          <Rectangle x:Name="SelectionBox" Stroke="#FFFFD600" Fill="#33FFD600" IsVisible="{Binding HasSelection}" />
+          <Ellipse x:Name="ClickMarker" Width="9" Height="9" Fill="#FFE53935" Stroke="White" IsVisible="{Binding HasClick}" />
+        </Canvas>
+      </LayoutTransformControl>
+    </ScrollViewer>
+  </DockPanel>
+</Window>

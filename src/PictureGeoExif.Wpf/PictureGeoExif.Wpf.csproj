@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Legacy Windows UI (WPF + WebView2). Kept buildable and shipped for Windows while the Avalonia UI
+    (src/PictureGeoExif.Avalonia) takes over. All business logic comes from the shared libraries.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AssemblyName>PictureExifclone</AssemblyName>
+    <RootNamespace>PictureExifclone</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" />
+    <PackageReference Include="Ookii.Dialogs.Wpf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PictureGeoExif.Core\PictureGeoExif.Core.csproj" />
+    <ProjectReference Include="..\PictureGeoExif.Metadata\PictureGeoExif.Metadata.csproj" />
+    <ProjectReference Include="..\PictureGeoExif.Application\PictureGeoExif.Application.csproj" />
+    <ProjectReference Include="..\PictureGeoExif.Platform.Windows\PictureGeoExif.Platform.Windows.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="PictureGeoExif.Core" />
+    <Using Include="PictureGeoExif.Core.Geo" />
+    <Using Include="PictureGeoExif.Core.IO" />
+    <Using Include="PictureGeoExif.Core.Security" />
+    <Using Include="PictureGeoExif.Metadata" />
+    <Using Include="PictureGeoExif.Metadata.Ai" />
+    <Using Include="PictureGeoExif.Metadata.Editing" />
+    <Using Include="PictureGeoExif.Application.Ai" />
+    <Using Include="PictureGeoExif.Platform.Windows" />
+    <Using Include="PictureGeoExif.Application.AppSettings" Alias="AppSettings" />
+    <Using Include="PictureGeoExif.Application.AiPriceEntry" Alias="AiPriceEntry" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\docs\examples\*.json" Link="Templates\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\THIRD-PARTY-LICENSES.md" Link="THIRD-PARTY-LICENSES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\licenses\**\*" LinkBase="licenses\" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

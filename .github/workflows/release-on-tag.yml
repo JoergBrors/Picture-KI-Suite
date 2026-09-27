@@ -1,0 +1,118 @@
+name: Build & Release on Tag
+
+on:
+  push:
+    tags:
+      - '*'
+
+env:
+  DOTNET_NOLOGO: 1
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  AVALONIA_TELEMETRY_OPTOUT: 1
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [win-x64, win-arm64]
+    env:
+      CONFIGURATION: Release
+      PROJECT_PATH: src/PictureGeoExif.Wpf/PictureGeoExif.Wpf.csproj
+    steps:
+      # Build exactly the tagged commit (not whatever main points to).
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Test
+        if: matrix.runtime == 'win-x64'
+        run: dotnet test PictureGeoExif.sln -c Release
+
+      - name: Publish WPF single-file (self-contained)
+        shell: pwsh
+        run: |
+          dotnet publish "${{ env.PROJECT_PATH }}" `
+            -c "${{ env.CONFIGURATION }}" `
+            -r "${{ matrix.runtime }}" `
+            /p:PublishSingleFile=true `
+            /p:IncludeNativeLibrariesForSelfExtract=true `
+            /p:SelfContained=true `
+            /p:PublishTrimmed=false `
+            /p:DebugType=None `
+            /p:DebugSymbols=false `
+            -o "out"
+
+      - name: Create zip
+        shell: pwsh
+        run: |
+          # LICENSE, THIRD-PARTY-LICENSES.md and licenses/ are copied by the project into the output folder.
+          $zip = "PictureExifclone-${{ github.ref_name }}-${{ matrix.runtime }}.zip"
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Compress-Archive -Path "out\*" -DestinationPath $zip
+          "ZIP_NAME=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Create/Update GitHub Release and upload asset
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            Automatisch erstelltes Release für Tag `${{ github.ref_name }}`.
+
+            **Build-Quelle:** Tag-Commit `${{ github.sha }}`
+
+            - Windows (WPF, self-contained single file): `PictureExifclone-<tag>-win-x64.zip`, `…-win-arm64.zip`
+            - macOS Apple Silicon (Avalonia, ad hoc signiert, nicht notarisiert): Installer `PictureGeoExif-<tag>-macOS-arm64.pkg` oder `PictureGeoExif-<tag>-macOS-arm64.zip` – siehe docs/MacOS-Deployment.md (Gatekeeper)
+
+            **Enthaltene Lizenzen:** LICENSE (MIT), THIRD-PARTY-LICENSES.md, licenses/
+          draft: false
+          prerelease: false
+          allowUpdates: true
+          artifacts: ${{ env.ZIP_NAME }}
+          replacesArtifacts: true
+
+  macos:
+    # After the Windows jobs, so only one job creates the GitHub release and the others update it.
+    needs: windows
+    runs-on: macos-15
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build PictureGeoExif.app and .pkg (ad-hoc signed, not notarized)
+        run: |
+          scripts/build-macos-arm64.sh --skip-tests --build-number "${{ github.run_number }}"
+          artifacts/macos-arm64/PictureGeoExif.app/Contents/MacOS/PictureGeoExif --self-test
+          sudo installer -pkg artifacts/macos-arm64/PictureGeoExif-macOS-arm64.pkg -target /
+          /Applications/PictureGeoExif.app/Contents/MacOS/PictureGeoExif --self-test
+          mv artifacts/macos-arm64/PictureGeoExif-macOS-arm64.zip "PictureGeoExif-${{ github.ref_name }}-macOS-arm64.zip"
+          mv artifacts/macos-arm64/PictureGeoExif-macOS-arm64.pkg "PictureGeoExif-${{ github.ref_name }}-macOS-arm64.pkg"
+
+      - name: Upload to GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          allowUpdates: true
+          omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
+          artifacts: PictureGeoExif-${{ github.ref_name }}-macOS-arm64.zip,PictureGeoExif-${{ github.ref_name }}-macOS-arm64.pkg
+          replacesArtifacts: false
