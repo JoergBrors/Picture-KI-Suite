@@ -82,7 +82,9 @@ Ergebnisse in dieser Umgebung:
 | CI macOS arm64 (GitHub-Runner, Apple Silicon, macOS 15.7.9): Tests inkl. PhotoKit/ImageIO-Interop, Release-Build, Publish, `.app`, Upload | PASS – Artifact `PictureGeoExif-macOS-arm64` (≈ 48 MB) |
 | `--self-test` des Bundles auf dem Runner | PASS: `Runtime Identifier: osx-arm64`, `ARM64: ja`, `PhotoKit available: ja`, `PhotoKit authorization: NotDetermined`, `PhotoKit request possible: ja` (Usage-Description aus Info.plist gefunden), `Decoder macOS ImageIO: PASS` |
 | `codesign --verify` des Bundles ohne Bundle-Signatur | FAIL („code has no resources but signature indicates they must be present“) → Bundle wird seitdem lokal ad hoc versiegelt, siehe [MacOS-Deployment.md](MacOS-Deployment.md) |
-| CI Windows / Linux | Linux PASS; Windows zunächst FAIL (Pfadlogik mit Unix-Pfaden unter Windows), behoben |
+| Ad-hoc-versiegeltes Bundle auf dem Runner | PASS: `codesign --verify --deep --strict` → „valid on disk“, „satisfies its Designated Requirement“; Selbsttest weiterhin PASS |
+| CI macOS-Tests (Runner) | PASS – 198 Tests inkl. PhotoKit/ImageIO-Interop |
+| CI Windows / Linux | PASS (Windows zunächst FAIL wegen Pfadlogik mit Unix-Pfaden, behoben); Windows-Artifact `PictureGeoExif-windows-x64` (WPF + Avalonia) |
 | Start der Oberfläche auf Apple M4 / macOS 27 | offen (keine Hardware) |
 
 ## PhotoKit
