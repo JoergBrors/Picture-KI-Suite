@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Windows adapters. Plain net10.0 so the cross-platform Avalonia app can reference it; every entry point is guarded by OperatingSystem.IsWindows(). -->
+  <PropertyGroup>
+    <RootNamespace>PictureGeoExif.Platform.Windows</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PictureGeoExif.Core\PictureGeoExif.Core.csproj" />
+  </ItemGroup>
+</Project>

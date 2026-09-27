@@ -1,6 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using PictureExifclone.Services;
 
 namespace PictureExifclone;
 

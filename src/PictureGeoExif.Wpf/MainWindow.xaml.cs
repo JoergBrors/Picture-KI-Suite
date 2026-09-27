@@ -7,7 +7,6 @@ using MetadataExtractor;
 using MetadataExtractor.Formats.Exif;
 using Microsoft.Web.WebView2.Core;
 using System.Linq;
-using PictureExifclone.Services;
 using PictureExifclone.Models;
 using System.Windows.Input;
 using System.Globalization;
@@ -396,7 +395,7 @@ namespace PictureExifclone
             if (!File.Exists(item.FilePath))
                 MessageBox.Show($"Die vorherige Datei existiert nicht mehr:\n{item.FilePath}", "Rückgängig", MessageBoxButton.OK, MessageBoxImage.Warning);
             else
-                item.Thumbnail = await imageService.CreateThumbnailAsync(item.FilePath);
+                item.Thumbnail = WpfImages.ToBitmap(await imageService.CreateThumbnailAsync(item.FilePath));
             if (selectedImage == item) SelectImage(item);
             RebuildRoutes();
             MapStatusText.Text = $"Rückgängig: {item.FileName} zeigt wieder den vorherigen Stand. Die zuvor gespeicherte Kopie bleibt erhalten: {replaced}";
@@ -461,7 +460,7 @@ namespace PictureExifclone
                         // Thumbnail erstellen mit Fehlerbehandlung (jetzt cached)
                         try
                         {
-                            imageItem.Thumbnail = await imageService.CreateThumbnailAsync(filePath);
+                            imageItem.Thumbnail = WpfImages.ToBitmap(await imageService.CreateThumbnailAsync(filePath));
                             
                             if (imageItem.Thumbnail == null)
                             {
@@ -573,7 +572,7 @@ namespace PictureExifclone
                         
                         
                         // Neues Thumbnail erstellen (wird automatisch gecached)
-                        imageItem.Thumbnail = await imageService.CreateThumbnailAsync(newPath);
+                        imageItem.Thumbnail = WpfImages.ToBitmap(await imageService.CreateThumbnailAsync(newPath));
 
                         MessageBox.Show($"Bearbeitetes Bild gespeichert:\n{newPath}", "Erfolg", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
@@ -612,7 +611,7 @@ namespace PictureExifclone
                         img.Latitude = lat.Value;
                         img.Longitude = lon.Value;
                     }
-                    img.Thumbnail = imageService.CreateThumbnail(newPath);
+                    img.Thumbnail = WpfImages.ToBitmap(imageService.CreateThumbnail(newPath));
 
                     savedCount++;
                 }
@@ -661,7 +660,7 @@ namespace PictureExifclone
                         img.Latitude = lat.Value;
                         img.Longitude = lon.Value;
                     }
-                    img.Thumbnail = imageService.CreateThumbnail(newPath);
+                    img.Thumbnail = WpfImages.ToBitmap(imageService.CreateThumbnail(newPath));
 
                     savedCount++;
                 }
@@ -697,7 +696,7 @@ namespace PictureExifclone
                         imageItem.Latitude = lat.Value;
                         imageItem.Longitude = lon.Value;
                     }
-                    imageItem.Thumbnail = await imageService.CreateThumbnailAsync(newPath);
+                    imageItem.Thumbnail = WpfImages.ToBitmap(await imageService.CreateThumbnailAsync(newPath));
 
                     RebuildRoutes();
                     MessageBox.Show($"Bild gespeichert:\n{newPath}", "Erfolg", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -790,7 +789,7 @@ namespace PictureExifclone
                     selectedImage.FilePath = newPath;
                     selectedImage.Latitude = currentLatitude;
                     selectedImage.Longitude = currentLongitude;
-                    selectedImage.Thumbnail = imageService.CreateThumbnail(newPath);
+                    selectedImage.Thumbnail = WpfImages.ToBitmap(imageService.CreateThumbnail(newPath));
 
                     RebuildRoutes();
                     MessageBox.Show($"Bild mit GPS-Koordinaten gespeichert:\n{newPath}",

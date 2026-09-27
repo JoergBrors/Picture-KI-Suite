@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Domain models, interfaces and pure logic. No dependency on WPF, Avalonia, Microsoft.macOS, AppKit, PhotoKit or Windows APIs. -->
+  <PropertyGroup>
+    <RootNamespace>PictureGeoExif.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="PictureGeoExif.Core.Tests" />
+  </ItemGroup>
+</Project>

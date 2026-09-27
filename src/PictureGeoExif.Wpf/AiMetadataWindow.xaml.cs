@@ -12,7 +12,6 @@ using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using PictureExifclone.Models;
-using PictureExifclone.Services;
 
 namespace PictureExifclone;
 
@@ -29,10 +28,11 @@ public partial class AiMetadataWindow : Window
     private JsonObject? schema;
     private CancellationTokenSource? run;
     private decimal spent, reserved;
+    private readonly WindowsCredentialStore credentials = new();
 
     private static string BaseTemplateFolder => Path.Combine(AppContext.BaseDirectory, "Templates");
-    private static string UserTemplateFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PictureExifclone", "templates");
-    private static string AuditFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PictureGeoExif", "ai-audit");
+    private static string UserTemplateFolder => PictureGeoExif.Application.AppPaths.Current.UserTemplatesFolder;
+    private static string AuditFolder => PictureGeoExif.Application.AppPaths.Current.AuditFolder;
 
     public AiMetadataWindow(IEnumerable<ImageItem> images, AppSettings settings)
     {
@@ -128,25 +128,25 @@ public partial class AiMetadataWindow : Window
         if (profile.Entra) { KeyStatus.Text = "Azure: Anmeldung über Entra ID (az login / Visual Studio / Browser)."; return; }
         try
         {
-            KeyStatus.Text = profile.CredentialTarget is { } target && CredentialStore.Read(target) != null
+            KeyStatus.Text = profile.CredentialTarget is { } target && credentials.Read(target) != null
                 ? $"Schlüssel gespeichert ({target})." : "Kein Schlüssel gespeichert; Umgebungsvariable wird verwendet, falls gesetzt.";
         }
-        catch (Win32Exception ex) { KeyStatus.Text = "Anmeldeinformationen nicht lesbar: " + ex.Message; }
+        catch (CredentialStoreException ex) { KeyStatus.Text = "Anmeldeinformationen nicht lesbar: " + ex.Message; }
     }
 
     private void SaveKey_Click(object sender, RoutedEventArgs e)
     {
         if (Profile?.CredentialTarget is not { } target) { KeyStatus.Text = "Dieses Profil nutzt keinen gespeicherten Schlüssel."; return; }
         if (string.IsNullOrWhiteSpace(KeyBox.Password)) { KeyStatus.Text = "Bitte Schlüssel eingeben."; return; }
-        try { CredentialStore.Write(target, KeyBox.Password.Trim()); KeyBox.Clear(); UpdateKeyStatus(); }
-        catch (Win32Exception ex) { KeyStatus.Text = "Speichern fehlgeschlagen: " + ex.Message; }
+        try { credentials.Write(target, KeyBox.Password.Trim()); KeyBox.Clear(); UpdateKeyStatus(); }
+        catch (CredentialStoreException ex) { KeyStatus.Text = "Speichern fehlgeschlagen: " + ex.Message; }
     }
 
     private void DeleteKey_Click(object sender, RoutedEventArgs e)
     {
         if (Profile?.CredentialTarget is not { } target) return;
-        try { CredentialStore.Delete(target); UpdateKeyStatus(); }
-        catch (Win32Exception ex) { KeyStatus.Text = "Löschen fehlgeschlagen: " + ex.Message; }
+        try { credentials.Delete(target); UpdateKeyStatus(); }
+        catch (CredentialStoreException ex) { KeyStatus.Text = "Löschen fehlgeschlagen: " + ex.Message; }
     }
 
     private static bool TryDecimal(string text, out decimal value) =>
@@ -291,7 +291,7 @@ public partial class AiMetadataWindow : Window
         if (MessageBox.Show(this, summary, "Kostenpflichtige Analyse starten", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
 
         IAiMetadataProvider provider;
-        try { provider = AiProviderFactory.Create(profile, template.MaxAttempts); }
+        try { provider = AiProviderFactory.Create(profile, template.MaxAttempts, credentials); }
         catch (Exception ex) { StatusText.Text = "Start blockiert: " + ex.Message; return; }
         settings.Save();
 
@@ -545,7 +545,7 @@ public partial class AiMetadataWindow : Window
         SetRunning(true);
         try
         {
-            var provider = AiProviderFactory.Create(profile, template.MaxAttempts);
+            var provider = AiProviderFactory.Create(profile, template.MaxAttempts, credentials);
             AiReply reply;
             try { reply = await provider.CompleteAsync(ChatSystem, user, null, "metadaten_chat_v1", ChatSchema(), 1200, CancellationToken.None); }
             catch (AiProviderException ex) { spent += prices.Cost(ex.Usage); throw; }

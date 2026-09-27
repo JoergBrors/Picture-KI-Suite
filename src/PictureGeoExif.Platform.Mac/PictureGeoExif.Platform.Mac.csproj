@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    macOS adapters (PhotoKit, ImageIO, Keychain). Deliberately plain net10.0 instead of net10.0-macos:
+    the Avalonia app is a normal osx-arm64 .NET app, and a net10.0-macos library could only be consumed by a
+    net10.0-macos app (macOS workload + Xcode, own NSApplication). PhotoKit is therefore called through the
+    Objective-C runtime (libobjc) using only public, documented PhotoKit APIs. See docs/MacOS-PhotoKit.md.
+    All native code sits behind IPhotoKitFacade so the mapping logic is unit-testable on any OS.
+  -->
+  <PropertyGroup>
+    <RootNamespace>PictureGeoExif.Platform.Mac</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PictureGeoExif.Core\PictureGeoExif.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="PictureGeoExif.Platform.Tests" />
+  </ItemGroup>
+</Project>
